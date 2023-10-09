@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.toolWindow
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
