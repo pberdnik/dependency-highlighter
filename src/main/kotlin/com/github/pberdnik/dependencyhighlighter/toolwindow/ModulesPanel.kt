@@ -1,17 +1,13 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.github.pberdnik.dependencyhighlighter.actions.GraphAnalysisAction
-import com.github.pberdnik.dependencyhighlighter.panel.FileDependenciesPanel
 import com.github.pberdnik.dependencyhighlighter.storage.GraphConfigStorageService
-import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow.Companion.getInstance
-import com.intellij.CommonBundle
-import com.intellij.analysis.AnalysisScope
-import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.components.service
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
-import com.intellij.packageDependencies.actions.AnalyzeDependenciesHandler
 import com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.JBCheckBox
@@ -20,10 +16,9 @@ import java.awt.event.ItemEvent
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 
 class ModulesPanel(val project: Project) : JPanel(BorderLayout()) {
-    private val graphConfig = GraphConfigStorageService.getInstance(project).state
+    private val graphConfig = project.service<GraphConfigStorageService>().state
 
     init {
         val modulesPanel = JPanel()

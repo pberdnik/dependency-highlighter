@@ -5,10 +5,7 @@ import com.github.pberdnik.dependencyhighlighter.views.DirNodeView
 import com.github.pberdnik.dependencyhighlighter.views.FileNodeView
 import com.github.pberdnik.dependencyhighlighter.views.FileNodeViewColor
 import com.github.pberdnik.dependencyhighlighter.views.NodeView
-import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.components.State
-import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.*
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
@@ -19,15 +16,15 @@ import org.jetbrains.annotations.NonNls
 import java.nio.file.Paths
 
 @State(name = "DependenciesGraph", storages = [Storage("dependenciesInfo.xml")])
+@Service(Service.Level.PROJECT)
 class GraphStorageService(val project: Project) : PersistentStateComponent<GraphState> {
-    private val LOG = Logger.getInstance(GraphStorageService::class.java)
+    private val logger = Logger.getInstance(GraphStorageService::class.java)
 
     private val state = GraphState()
-    var dependencyGraph = DependencyGraph()
-        private set
+    private var dependencyGraph = DependencyGraph()
     val graphConfig = GraphConfig(project)
     var nodeViews = mutableMapOf<String, NodeView>()
-    val virtualFileManager = VirtualFileManager.getInstance()
+    private val virtualFileManager = VirtualFileManager.getInstance()
 
     override fun getState() = state
 
@@ -41,13 +38,13 @@ class GraphStorageService(val project: Project) : PersistentStateComponent<Graph
         dependencyGraph.nodes.forEach { (_, node) ->
             val virtualFile = virtualFileManager.findFileByNioPath(Paths.get(node.path))
             if (virtualFile == null) {
-                LOG.error("Can't find virtual file for path: ${node.path}")
+                logger.error("Can't find virtual file for path: ${node.path}")
                 return@forEach
             }
             val path = virtualFile.path
             val fileNodeView = FileNodeView(node.asNodeViewColor(), node.codeFile.size / 50, node.depth, node.cycle != null)
             if (nodeViews.containsKey(path)) {
-                LOG.error("nodeViews already contains path [$path] with value: ${nodeViews[path]}")
+                logger.error("nodeViews already contains path [$path] with value: ${nodeViews[path]}")
             }
             nodeViews[path] = fileNodeView
             var parent = virtualFile.parent
@@ -82,16 +79,10 @@ class GraphStorageService(val project: Project) : PersistentStateComponent<Graph
         val node = dependencyGraph.nodes[path] ?: return mutableListOf()
         return node.cycle?.nodes?.mapNotNull { dep -> virtualFileManager.findFileByNioPath(Paths.get(dep.path)) } ?: mutableListOf()
     }
-
-    companion object {
-        fun getInstance(project: Project): GraphStorageService {
-            return ServiceManager.getService(project, GraphStorageService::class.java)
-        }
-    }
 }
 
-private fun Node.asNodeViewColor() = when {
-    color == Color.GREEN -> FileNodeViewColor.GREEN
-    color == Color.RED -> if (onlyRed != null) FileNodeViewColor.YELLOW else FileNodeViewColor.RED
+private fun Node.asNodeViewColor() = when (color) {
+    Color.GREEN -> FileNodeViewColor.GREEN
+    Color.RED -> if (onlyRed != null) FileNodeViewColor.YELLOW else FileNodeViewColor.RED
     else -> FileNodeViewColor.GRAY
 }

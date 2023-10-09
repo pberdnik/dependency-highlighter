@@ -2,14 +2,15 @@ package com.github.pberdnik.dependencyhighlighter.actions
 
 import com.github.pberdnik.dependencyhighlighter.old.file.CodeFile
 import com.github.pberdnik.dependencyhighlighter.old.graph.GraphConfig
-import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService.Companion.getInstance
+import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
+import com.intellij.openapi.components.service
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import java.util.*
 
 fun performAction(dependencies: MutableMap<PsiFile, MutableSet<PsiFile>>, project: Project) {
-    val storage = getInstance(project)
+    val storage = project.service<GraphStorageService>()
     val codeFiles = mutableMapOf<String, CodeFile>()
     val config = storage.graphConfig
     val files = dependencies.keys

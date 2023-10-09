@@ -29,9 +29,7 @@ import com.intellij.openapi.module.ModuleGrouper;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ContentIterator;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Comparing;
@@ -43,13 +41,11 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiFileSystemItem;
 import com.intellij.util.ui.tree.TreeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
@@ -337,11 +333,7 @@ public class MyFileTreeModelBuilder {
                 final VirtualFile root;
                 if (!Comparing.equal(sourceRoot, virtualFile) && sourceRoot != null) {
                     root = sourceRoot;
-                } else if (contentRoot != null) {
-                    root = contentRoot;
-                } else {
-                    root = null;
-                }
+                } else root = contentRoot;
                 if (root != null) {
                     getModuleDirNode(root, module, null, dependencyType).add(directoryNode);
                 } else {

@@ -4,6 +4,7 @@ import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ProjectViewNodeDecorator
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
@@ -18,11 +19,11 @@ private val YELLOW_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN,
 private val GRAY_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor.GRAY)
 
 class DependenciesProjectViewNodeDecorator(val project: Project) : ProjectViewNodeDecorator {
-    private val LOG = Logger.getInstance(DependenciesProjectViewNodeDecorator::class.java)
-    private val storage = GraphStorageService.getInstance(project)
+    private val logger = Logger.getInstance(DependenciesProjectViewNodeDecorator::class.java)
+    private val storage = project.service<GraphStorageService>()
 
     init {
-        LOG.warn("INIT; storage=$storage")
+        logger.warn("INIT; storage=$storage")
     }
 
     override fun decorate(node: ProjectViewNode<*>?, data: PresentationData?) {

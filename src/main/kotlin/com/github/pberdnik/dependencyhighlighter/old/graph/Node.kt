@@ -9,13 +9,13 @@ class Node(val codeFile: CodeFile) {
     val dependencies = mutableSetOf<Node>()
     val backwardDependencies = mutableSetOf<Node>()
 
-    var _color: Color = Color.WHITE
+    var nodeColor: Color = Color.WHITE
     var cycle: Cycle? = null
     var depth = -1
 
     var onlyRed: Node? = null
     val color: Color
-        get() = _color
+        get() = nodeColor
 
     override fun equals(other: Any?): Boolean {
         return other != null && other is Node && this.id == other.id

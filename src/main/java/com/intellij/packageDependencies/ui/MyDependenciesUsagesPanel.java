@@ -22,7 +22,6 @@ import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.packageDependencies.FindDependencyUtil;
 import com.intellij.packageDependencies.MyDependenciesBuilder;
 import com.intellij.packageDependencies.MyFindDependencyUtil;
 import com.intellij.psi.PsiElement;
@@ -77,7 +76,7 @@ public class MyDependenciesUsagesPanel extends UsagesPanel {
             }
             assert !new HashSet<>(elementsToSearch).contains(null);
           }
-          catch (ProcessCanceledException e) {
+          catch (ProcessCanceledException ignored) {
           }
           catch (Exception e) {
             LOG.error(e);

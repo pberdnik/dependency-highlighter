@@ -4,10 +4,9 @@ import com.github.pberdnik.dependencyhighlighter.old.file.CodeFile
 
 class DependencyGraph {
     val nodes = mutableMapOf<String, Node>()
-    val topSorted = mutableListOf<Node>()
+    private val topSorted = mutableListOf<Node>()
 
-    val redNodes = mutableMapOf<String, Int>()
-    val sortedRedNodes get() = redNodes.toList().sortedBy { (_, size) -> size }
+    private val redNodes = mutableMapOf<String, Int>()
 
     private val nodesInProcess = mutableListOf<Node>()
 
@@ -42,8 +41,8 @@ class DependencyGraph {
 
     fun processYellow() {
         topSorted.forEach { node ->
-            if (node._color == Color.RED) {
-                val redDeps = node.dependencies.filter { it._color == Color.RED }
+            if (node.nodeColor == Color.RED) {
+                val redDeps = node.dependencies.filter { it.nodeColor == Color.RED }
                 if (redDeps.size == 1) {
                     node.onlyRed = redDeps[0]
                 }
@@ -59,22 +58,22 @@ class DependencyGraph {
 
     private fun runDfs() {
         for (node in nodes.values) {
-            node._color = Color.WHITE
+            node.nodeColor = Color.WHITE
         }
         for (node in nodes.values) {
-            if (node._color == Color.WHITE) {
+            if (node.nodeColor == Color.WHITE) {
                 dfs(node)
             }
         }
     }
 
     private fun dfs(node: Node) {
-        node._color = Color.GRAY
+        node.nodeColor = Color.GRAY
         nodesInProcess.add(node)
         for (dependentNode in node.dependencies) {
-            if (dependentNode._color == Color.WHITE) {
+            if (dependentNode.nodeColor == Color.WHITE) {
                 dfs(dependentNode)
-            } else if (dependentNode._color == Color.GRAY) {
+            } else if (dependentNode.nodeColor == Color.GRAY) {
                 val cycle = Cycle()
                 var i = nodesInProcess.size
                 do {
@@ -84,22 +83,22 @@ class DependencyGraph {
                 } while (nodesInProcess[i] != dependentNode)
             }
         }
-        node._color = Color.BLACK
+        node.nodeColor = Color.BLACK
         nodesInProcess.remove(node)
         topSorted.add(node)
     }
 
     private fun analyzeMobility(config: GraphConfig) {
         topSorted.forEach { node ->
-            node._color = Color.WHITE
+            node.nodeColor = Color.WHITE
 
             if (!config.greenModules.contains(node.codeFile.module) || node.cycle != null || config.redClasses.contains(node.codeFile.className)) {
                 markAsRed(node)
             } else if (node.dependencies.isEmpty()) {
-                node._color = Color.GREEN
+                node.nodeColor = Color.GREEN
                 node.depth = 0
-            } else if (node.dependencies.all { it._color == Color.GREEN }) {
-                node._color = Color.GREEN
+            } else if (node.dependencies.all { it.nodeColor == Color.GREEN }) {
+                node.nodeColor = Color.GREEN
                 node.depth = node.dependencies.maxByOrNull { it.depth }!!.depth + 1
             } else {
                 markAsRed(node)
@@ -108,12 +107,12 @@ class DependencyGraph {
     }
 
     private fun markAsRed(node: Node) {
-        node._color = Color.RED
+        node.nodeColor = Color.RED
         if (node.dependencies.isEmpty()) {
             node.depth = 0
         } else {
             node.depth =
-                node.dependencies.filter { it._color == Color.RED }.maxByOrNull { it.depth }?.depth?.plus(1) ?: 0
+                node.dependencies.filter { it.nodeColor == Color.RED }.maxByOrNull { it.depth }?.depth?.plus(1) ?: 0
         }
     }
 }

@@ -141,7 +141,7 @@ public class FileAnalyzeDependenciesHandler {
         Content content = ContentFactory.getInstance().createContent(panel, displayName, false);
         content.setDisposer(panel);
         panel.setContent(content);
-        FileDependenciesToolWindow.Companion.getInstance(myProject).addContent(content);
+        myProject.getService(FileDependenciesToolWindow.class).addContent(content);
       }
     });
     ProjectView.getInstance(myProject).refresh();

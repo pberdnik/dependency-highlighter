@@ -11,16 +11,10 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.MyToolWindowFactory"
                     id="MyToolWindow"/>
-
-        <projectService serviceImplementation="com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService"/>
-        <projectService
-                serviceImplementation="com.github.pberdnik.dependencyhighlighter.storage.GraphConfigStorageService"/>
-        <projectService
-                serviceImplementation="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow"/>
-        <projectViewNodeDecorator
-                implementation="com.github.pberdnik.dependencyhighlighter.views.DependenciesProjectViewNodeDecorator"/>
         <toolWindow id="File Dependencies" secondary="true" icon="SdkIcons.dependencies" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
+        <projectViewNodeDecorator
+                implementation="com.github.pberdnik.dependencyhighlighter.views.DependenciesProjectViewNodeDecorator"/>
     </extensions>
 
     <actions>

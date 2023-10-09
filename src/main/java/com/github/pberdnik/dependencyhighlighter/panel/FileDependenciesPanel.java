@@ -110,7 +110,7 @@ public final class FileDependenciesPanel extends JPanel implements Disposable, D
     }
     exclude(excluded);
     myProject = project;
-    mGraphStorageService = GraphStorageService.Companion.getInstance(project);
+    mGraphStorageService = project.getService(GraphStorageService.class);
 
     add(ScrollPaneFactory.createScrollPane(myRightTree), BorderLayout.CENTER);
     add(createToolbar(), BorderLayout.NORTH);
@@ -407,11 +407,10 @@ public final class FileDependenciesPanel extends JPanel implements Disposable, D
             int row,
             boolean hasFocus
     ){
-      if (!(value instanceof PackageDependenciesNode)) {
+      if (!(value instanceof PackageDependenciesNode node)) {
         LOG.error("value type should be PackageDependenciesNode but is " + value.getClass() + "; And value is " + Arrays.toString(((DefaultMutableTreeNode) value).getPath()));
         return;
       }
-      PackageDependenciesNode node = (PackageDependenciesNode)value;
       if (node.isValid()) {
         setIcon(node.getIcon());
       } else {
@@ -422,8 +421,7 @@ public final class FileDependenciesPanel extends JPanel implements Disposable, D
       if (psiElement instanceof PsiFile) {
         String path = ((PsiFile) psiElement).getVirtualFile().getPath();
         NodeView nodeView = mGraphStorageService.getNodeViews().get(path);
-        if (nodeView instanceof FileNodeView) {
-          FileNodeView fileNodeView = (FileNodeView) nodeView;
+        if (nodeView instanceof FileNodeView fileNodeView) {
           SimpleTextAttributes textColor = REGULAR_TEXT;
           FileNodeViewColor fileNodeViewColor = fileNodeView.getColor();
           if (fileNodeViewColor == FileNodeViewColor.GREEN) {
@@ -450,7 +448,7 @@ public final class FileDependenciesPanel extends JPanel implements Disposable, D
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-      FileDependenciesToolWindow.Companion.getInstance(myProject).closeContent(myContent);
+      myProject.getService(FileDependenciesToolWindow.class).closeContent(myContent);
       mySettings.copyToApplicationDependencySettings();
     }
   }
@@ -567,7 +565,7 @@ public final class FileDependenciesPanel extends JPanel implements Disposable, D
       @NonNls final String delim = "&nbsp;-&gt;&nbsp;";
       final StringBuffer buf = new StringBuffer();
       processDependencies(getSelectedScope(myLeftTree), getSelectedScope(myRightTree), path -> {
-        if (buf.length() > 0) buf.append("<br>");
+        if (!buf.isEmpty()) buf.append("<br>");
         buf.append(StringUtil.join(path, psiFile -> psiFile.getName(), delim));
         return true;
       });

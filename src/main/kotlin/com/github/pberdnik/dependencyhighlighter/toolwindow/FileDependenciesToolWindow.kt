@@ -1,7 +1,6 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupManager
 import com.intellij.openapi.wm.ToolWindow
@@ -12,9 +11,8 @@ import com.intellij.ui.content.ContentManager
 
 private const val GREEN_MODULES = "Green Modules"
 
+@Service(Service.Level.PROJECT)
 class FileDependenciesToolWindow(private val project: Project) {
-    private val LOG = Logger.getInstance(FileDependenciesToolWindow::class.java)
-
     private var contentManager: ContentManager? = null
 
     fun initToolWindow(toolWindow: ToolWindow) {
@@ -50,11 +48,5 @@ class FileDependenciesToolWindow(private val project: Project) {
 
     fun closeContent(content: Content?) {
         contentManager?.removeContent(content!!, true)
-    }
-
-    companion object {
-        fun getInstance(project: Project): FileDependenciesToolWindow {
-            return ServiceManager.getService(project, FileDependenciesToolWindow::class.java)
-        }
     }
 }
