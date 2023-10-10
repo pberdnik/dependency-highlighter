@@ -13,141 +13,73 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.github.pberdnik.dependencyhighlighter.panel
 
-package com.github.pberdnik.dependencyhighlighter.panel;
+import com.github.pberdnik.dependencyhighlighter.actions.performAction
+import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow
+import com.intellij.analysis.AnalysisScope
+import com.intellij.analysis.PerformAnalysisInBackgroundOption
+import com.intellij.codeInsight.CodeInsightBundle
+import com.intellij.ide.projectView.ProjectView
+import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.*
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.IndexNotReadyException
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.NlsContexts.TabTitle
+import com.intellij.packageDependencies.MyDependenciesBuilder
+import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
+import com.intellij.psi.PsiFile
+import com.intellij.ui.content.ContentFactory
+import javax.swing.SwingUtilities
 
-import com.github.pberdnik.dependencyhighlighter.actions.SaveAnalysisResultActionExtensionsKt;
-import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow;
-import com.intellij.analysis.AnalysisScope;
-import com.intellij.analysis.PerformAnalysisInBackgroundOption;
-import com.intellij.codeInsight.CodeInsightBundle;
-import com.intellij.ide.projectView.ProjectView;
-import com.intellij.openapi.progress.ProcessCanceledException;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.project.DumbService;
-import com.intellij.openapi.project.IndexNotReadyException;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.NlsContexts;
-import com.intellij.packageDependencies.MyDependenciesBuilder;
-import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder;
-import com.intellij.psi.PsiFile;
-import com.intellij.ui.content.Content;
-import com.intellij.ui.content.ContentFactory;
-import org.jetbrains.annotations.NotNull;
-
-import javax.swing.*;
-import java.util.*;
-
-public class FileAnalyzeDependenciesHandler {
-  @NotNull
-  protected final Project myProject;
-  private final List<? extends AnalysisScope> myScopes;
-  private final Set<PsiFile> myExcluded;
-  private final int myTransitiveBorder;
-
-  public FileAnalyzeDependenciesHandler(@NotNull Project project, List<? extends AnalysisScope> scopes, int transitiveBorder, Set<PsiFile> excluded) {
-    myProject = project;
-    myScopes = scopes;
-    myTransitiveBorder = transitiveBorder;
-    myExcluded = excluded;
-  }
-
-  public FileAnalyzeDependenciesHandler(final Project project, final AnalysisScope scope, final int transitiveBorder) {
-    this(project, Collections.singletonList(scope), transitiveBorder, new HashSet<>());
-  }
-
-  public void analyze() {
-    final List<MyDependenciesBuilder> builders = new ArrayList<>();
-
-    final Task task;
-    if (canStartInBackground()) {
-      task = new Task.Backgroundable(myProject, getProgressTitle(), true, new PerformAnalysisInBackgroundOption(myProject)) {
-        @Override
-        public void run(@NotNull final ProgressIndicator indicator) {
-          indicator.setIndeterminate(false);
-          perform(builders, indicator);
+class FileAnalyzeDependenciesHandler(
+        private val project: Project,
+        private val scopes: List<AnalysisScope>,
+        private val myTransitiveBorder: Int,
+        private val excluded: MutableSet<PsiFile> = HashSet()
+) {
+    fun analyze() {
+        val builders = mutableListOf<MyDependenciesBuilder>()
+        runBackgroundableTask(progressTitle, project, true) { indicator ->
+            indicator.isIndeterminate = false
+            perform(builders, indicator)
+            refreshPanel(builders)
         }
-
-        @Override
-        public void onSuccess() {
-          FileAnalyzeDependenciesHandler.this.onSuccess(builders);
-        }
-      };
-    } else {
-      task = new Task.Modal(myProject, getProgressTitle(), true) {
-        @Override
-        public void run(@NotNull ProgressIndicator indicator) {
-          indicator.setIndeterminate(false);
-          perform(builders, indicator);
-        }
-
-        @Override
-        public void onSuccess() {
-          FileAnalyzeDependenciesHandler.this.onSuccess(builders);
-        }
-      };
     }
-    ProgressManager.getInstance().run(task);
-  }
 
-  private boolean canStartInBackground() {
-    return true;
-  }
+    private val progressTitle: String
+        get() = CodeInsightBundle.message("package.dependencies.progress.title")
 
-  private boolean shouldShowDependenciesPanel(List<? extends MyDependenciesBuilder> builders) {
-    return true;
-  }
-
-  private MyDependenciesBuilder createDependenciesBuilder(AnalysisScope scope) {
-    return new MyForwardDependenciesBuilder(myProject, scope, myTransitiveBorder);
-  }
-
-  private String getPanelDisplayName(final AnalysisScope scope) {
-    return CodeInsightBundle.message("package.dependencies.toolwindow.title", scope.getDisplayName());
-  }
-
-  private String getProgressTitle() {
-    return CodeInsightBundle.message("package.dependencies.progress.title");
-  }
-
-  private void perform(List<MyDependenciesBuilder> builders, @NotNull ProgressIndicator indicator) {
-    try {
-      for (AnalysisScope scope : myScopes) {
-        builders.add(createDependenciesBuilder(scope));
-      }
-      for (MyDependenciesBuilder builder : builders) {
-        builder.analyze();
-      }
-      Map<PsiFile, Set<PsiFile>> myDependencies = new HashMap<>();
-      for (MyDependenciesBuilder builder : builders) {
-        myDependencies.putAll(builder.getDependencies());
-      }
-      SaveAnalysisResultActionExtensionsKt.performAction(myDependencies, myProject);
-    } catch (IndexNotReadyException e) {
-      DumbService.getInstance(myProject).showDumbModeNotification(
-              CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"));
-      throw new ProcessCanceledException();
+    private fun perform(builders: MutableList<MyDependenciesBuilder>, indicator: ProgressIndicator) {
+        try {
+            for (scope in scopes) {
+                builders.add(MyForwardDependenciesBuilder(project, scope, myTransitiveBorder))
+            }
+            for (builder in builders) {
+                builder.analyze()
+            }
+            val myDependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
+            for (builder in builders) {
+                myDependencies.putAll(builder.dependencies)
+            }
+            performAction(myDependencies, project)
+        } catch (e: IndexNotReadyException) {
+            DumbService.getInstance(project).showDumbModeNotification(
+                    CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))
+            throw ProcessCanceledException()
+        }
     }
-  }
 
-  private void onSuccess(final List<MyDependenciesBuilder> builders) {
-    //noinspection SSBasedInspection
-    SwingUtilities.invokeLater(() -> {
-      if (shouldShowDependenciesPanel(builders)) {
-        final String displayName = getPanelDisplayName(builders);
-        FileDependenciesPanel panel = new FileDependenciesPanel(myProject, builders, myExcluded);
-        Content content = ContentFactory.getInstance().createContent(panel, displayName, false);
-        content.setDisposer(panel);
-        panel.setContent(content);
-        myProject.getService(FileDependenciesToolWindow.class).addContent(content);
-      }
-    });
-    ProjectView.getInstance(myProject).refresh();
-  }
-
-  private @NlsContexts.TabTitle String getPanelDisplayName(List<? extends MyDependenciesBuilder> builders) {
-    return getPanelDisplayName(builders.get(0).getScope());
-  }
+    private fun refreshPanel(builders: MutableList<MyDependenciesBuilder>) {
+        SwingUtilities.invokeLater {
+            val displayName = CodeInsightBundle.message("package.dependencies.toolwindow.title", builders[0].scope.displayName)
+            val panel = FileDependenciesPanel(project, builders, excluded)
+            val content = ContentFactory.getInstance().createContent(panel, displayName, false)
+            content.setDisposer(panel)
+            panel.setContent(content)
+            project.service<FileDependenciesToolWindow>().addContent(content)
+        }
+        ProjectView.getInstance(project).refresh()
+    }
 }

@@ -11,10 +11,13 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.MyToolWindowFactory"
                     id="MyToolWindow"/>
-        <toolWindow id="File Dependencies" secondary="true" icon="SdkIcons.dependencies" anchor="right"
+        <toolWindow id="OldToolWindow" secondary="true" icon="SdkIcons.oldDependencies" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
         <projectViewNodeDecorator
                 implementation="com.github.pberdnik.dependencyhighlighter.views.DependenciesProjectViewNodeDecorator"/>
+
+        <toolWindow id="File Dependencies" secondary="true" icon="SdkIcons.dependencies" anchor="right"
+                    factoryClass="com.github.pberdnik.dependencyhighlighter.newplugin.toolwindow.DependenciesToolWindowFactory"/>
     </extensions>
 
     <actions>
@@ -26,9 +29,4 @@
             <override-text place="MainMenu" text="Extended Analyze Dependencies"/>
         </action>
     </actions>
-
-    <applicationListeners>
-        <listener class="com.github.pberdnik.dependencyhighlighter.listeners.MyApplicationActivationListener"
-                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
-    </applicationListeners>
 </idea-plugin>

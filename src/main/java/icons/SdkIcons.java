@@ -9,5 +9,6 @@ import javax.swing.*;
 public class SdkIcons {
 
   public static final Icon dependencies = IconLoader.getIcon("/icons/dependencies.svg", SdkIcons.class);
+  public static final Icon oldDependencies = IconLoader.getIcon("/icons/old_dependencies.svg", SdkIcons.class);
 
 }
