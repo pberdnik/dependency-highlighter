@@ -41,13 +41,7 @@ class ModulesPanel(val project: Project) : JPanel(BorderLayout()) {
 
     private fun createToolbar(): JComponent {
         val group = DefaultActionGroup()
-        val myAnalyzeDependenciesAction = MyAnalyzeDependenciesAction()
-        with(myAnalyzeDependenciesAction.templatePresentation) {
-            icon = AllIcons.Actions.Rerun
-            text = "Run Full Analysis"
-            description = "Run full analysis"
-        }
-        group.add(myAnalyzeDependenciesAction)
+        group.add(MyAnalyzeDependenciesAction())
         group.add(GraphAnalysisAction())
         val toolbar = ActionManager.getInstance().createActionToolbar("PackageDependencies", group, true)
         return toolbar.component
