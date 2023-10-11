@@ -1,5 +1,7 @@
-package com.intellij.packageDependencies.ui;
+package com.intellij.packageDependencies.ui
 
-public enum DependencyType {
-    FORWARD, BACKWARD, CYCLE
+enum class DependencyType {
+    FORWARD,
+    BACKWARD,
+    CYCLE
 }

@@ -8,7 +8,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
 import com.github.pberdnik.dependencyhighlighter.MyBundle
-import com.github.pberdnik.dependencyhighlighter.services.MyProjectService
+import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import javax.swing.JButton
 
 
@@ -24,7 +24,7 @@ class DependenciesToolWindowFactory : ToolWindowFactory {
 
     class DependenciesToolWindow(toolWindow: ToolWindow) {
 
-        private val service = toolWindow.project.service<MyProjectService>()
+        private val service = toolWindow.project.service<ProjectViewUiStateService>()
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
             val label = JBLabel(MyBundle.message("randomLabel", "?"))

@@ -37,7 +37,7 @@ class FileDependenciesToolWindow(private val project: Project) {
                 removeContentsExceptModules(contentManager)
                 contentManager.addContent(content)
                 contentManager.setSelectedContent(content)
-                ToolWindowManager.getInstance(project).getToolWindow("File Dependencies")!!.activate(null)
+//                ToolWindowManager.getInstance(project).getToolWindow("File Dependencies")!!.activate(null)
             }
         }
     }

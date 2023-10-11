@@ -2,12 +2,15 @@
 package com.github.pberdnik.dependencyhighlighter.panel
 
 import com.github.pberdnik.dependencyhighlighter.panel.actions.*
+import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
+import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
 import com.intellij.ide.impl.FlattenModulesToggleAction
 import com.intellij.lang.LangBundle
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
@@ -37,7 +40,11 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.tree.TreePath
 
-class FileDependenciesPanel(project: Project, private val myBuilders: MutableList<MyDependenciesBuilder>, private val myExcluded: MutableSet<PsiFile>) : JPanel(BorderLayout()), Disposable, DataProvider {
+class FileDependenciesPanel(
+        private val project: Project,
+        private val myBuilders: MutableList<MyDependenciesBuilder>,
+        private val myExcluded: MutableSet<PsiFile>
+) : JPanel(BorderLayout()), Disposable, DataProvider {
     private val myDependencies: MutableMap<PsiFile, Set<PsiFile>>
     private var myIllegalDependencies: MutableMap<VirtualFile, MutableMap<DependencyRule, MutableSet<PsiFile>>?>
     private val myLeftTree = MyTree()
@@ -45,7 +52,6 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
     private val myRightTreeExpansionMonitor: TreeExpansionMonitor<*>
     private val myRightTreeMarker: Marker
     private var myIllegalsInRightTree: MutableSet<VirtualFile> = HashSet()
-    private val myProject: Project
     private var myContent: Content? = null
     private val mySettings = DependencyPanelSettings()
     private val myScopeOfInterest: AnalysisScope?
@@ -64,14 +70,13 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
             putAllDependencies(builder)
         }
         exclude(myExcluded)
-        myProject = project
         mGraphStorageService = project.getService(GraphStorageService::class.java)
         add(ScrollPaneFactory.createScrollPane(myRightTree), BorderLayout.CENTER)
         add(createToolbar(), BorderLayout.NORTH)
-        myRightTreeExpansionMonitor = PackageTreeExpansionMonitor.install(myRightTree, myProject)
+        myRightTreeExpansionMonitor = PackageTreeExpansionMonitor.install(myRightTree, this.project)
         myRightTreeMarker = Marker { file -> myIllegalsInRightTree.contains(file) }
         updateRightTreeModel()
-        val connection = myProject.messageBus.connect(this)
+        val connection = this.project.messageBus.connect(this)
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
             override fun fileOpened(manager: FileEditorManager, file: VirtualFile) {
                 mSelectedPsiFile = PsiManager.getInstance(project).findFile(file)
@@ -103,27 +108,27 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
 
     private fun createToolbar(): JComponent {
         val group = DefaultActionGroup()
-        group.add(CloseAction(myProject, mySettings, myContent))
+        group.add(CloseAction(project, mySettings, myContent))
         group.add(FlattenPackagesAction(mySettings, ::rebuild))
         mySettings.UI_SHOW_FILES = true
-        if (ModuleManager.getInstance(myProject).modules.size > 1) {
+        if (ModuleManager.getInstance(project).modules.size > 1) {
             mySettings.UI_SHOW_MODULES = true
             group.add(createFlattenModulesAction())
-            if (ModuleManager.getInstance(myProject).hasModuleGroups()) {
+            if (ModuleManager.getInstance(project).hasModuleGroups()) {
                 mySettings.UI_SHOW_MODULE_GROUPS = true
             }
         }
         group.add(GroupByScopeTypeAction(mySettings, ::rebuild))
         group.add(FilterLegalsAction(mySettings, ::rebuild, ::setEmptyText))
-        group.add(MarkAsIllegalAction(myProject, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders))
+        group.add(MarkAsIllegalAction(project, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders))
         group.add(ChooseScopeTypeAction(mySettings, ::rebuild))
-        group.add(EditDependencyRulesAction(myProject, ::rebuild))
+        group.add(EditDependencyRulesAction(project, ::rebuild))
         val toolbar = ActionManager.getInstance().createActionToolbar("PackageDependencies", group, true)
         return toolbar.component
     }
 
     private fun createFlattenModulesAction(): FlattenModulesToggleAction {
-        return FlattenModulesToggleAction(myProject, { mySettings.UI_SHOW_MODULES }, { !mySettings.UI_SHOW_MODULE_GROUPS }) { value: Boolean? ->
+        return FlattenModulesToggleAction(project, { mySettings.UI_SHOW_MODULES }, { !mySettings.UI_SHOW_MODULE_GROUPS }) { value: Boolean? ->
             DependencyUISettings.getInstance().UI_SHOW_MODULE_GROUPS = !value!!
             mySettings.UI_SHOW_MODULE_GROUPS = !value
             rebuild()
@@ -191,10 +196,12 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
         }
         forwardDeps.removeAll(vScope)
         backwardDeps.removeAll(vScope)
+        project.service<ProjectViewUiStateService>().setDeps(forwardDeps, backwardDeps, cycleDeps)
         myRightTreeExpansionMonitor.freeze()
         myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, myRightTreeMarker))
         myRightTreeExpansionMonitor.restore()
         expandFirstLevel(myRightTree)
+        UIUtils.updateUI(project)
     }
 
     private fun createTreePopupActions(): ActionGroup {
@@ -203,13 +210,13 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
         group.add(actionManager.getAction(IdeActions.ACTION_EDIT_SOURCE))
         group.add(actionManager.getAction(IdeActions.GROUP_VERSION_CONTROLS))
         group.add(actionManager.getAction(IdeActions.GROUP_ANALYZE))
-        group.add(AddToScopeAction(myProject, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders, myDependencies, myExcluded, ::putAllDependencies, ::exclude))
+        group.add(AddToScopeAction(project, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders, myDependencies, myExcluded, ::putAllDependencies, ::exclude))
         group.add(ShowDetailedInformationAction(mySettings, myLeftTree, myRightTree, myTransitiveBorder, myBuilders))
         return group
     }
 
     private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, marker: Marker): TreeModel {
-        return MyFileTreeModelBuilder.createTreeModel(myProject, false, forwardDeps, backwardDeps, cycleDeps, marker, mySettings)
+        return MyFileTreeModelBuilder.createTreeModel(project, false, forwardDeps, backwardDeps, cycleDeps, marker, mySettings)
     }
 
     fun setContent(content: Content?) {
@@ -217,7 +224,7 @@ class FileDependenciesPanel(project: Project, private val myBuilders: MutableLis
     }
 
     override fun dispose() {
-        MyFileTreeModelBuilder.clearCaches(myProject)
+        MyFileTreeModelBuilder.clearCaches(project)
     }
 
     override fun getData(dataId: @NonNls String): @NonNls Any? {

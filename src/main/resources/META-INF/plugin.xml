@@ -14,10 +14,13 @@
         <toolWindow id="OldToolWindow" secondary="true" icon="SdkIcons.oldDependencies" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
         <projectViewNodeDecorator
-                implementation="com.github.pberdnik.dependencyhighlighter.views.DependenciesProjectViewNodeDecorator"/>
+                implementation="com.github.pberdnik.dependencyhighlighter.fileui.DependenciesProjectViewNodeDecorator"/>
 
         <toolWindow id="File Dependencies" secondary="true" icon="SdkIcons.dependencies" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.newplugin.toolwindow.DependenciesToolWindowFactory"/>
+        
+        <editorTabColorProvider
+                implementation="com.github.pberdnik.dependencyhighlighter.fileui.ProjectPanelColorProvider" />
     </extensions>
 
     <actions>
