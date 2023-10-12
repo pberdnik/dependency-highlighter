@@ -17,7 +17,7 @@ import com.intellij.openapi.util.NlsSafe
 import icons.SdkIcons
 import javax.swing.JComponent
 
-class MyAnalyzeDependenciesAction : AnAction("Run Analysis", "Run analysis", AllIcons.Actions.Rerun) {
+class MyAnalyzeDependenciesAction : AnAction("Run Analysis", "Run analysis", SdkIcons.analyze) {
     fun analyze(project: Project, scope: AnalysisScope) {
         FileAnalyzeDependenciesHandler(project, listOf(scope), 0).analyze()
     }

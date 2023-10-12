@@ -9,16 +9,10 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.MyToolWindowFactory"
-                    id="MyToolWindow"/>
-        <toolWindow id="OldToolWindow" secondary="true" icon="SdkIcons.oldDependencies" anchor="right"
+        <toolWindow id="Analyse Dependencies" secondary="true" icon="SdkIcons.analysis" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
         <projectViewNodeDecorator
                 implementation="com.github.pberdnik.dependencyhighlighter.fileui.DependenciesProjectViewNodeDecorator"/>
-
-        <toolWindow id="File Dependencies" secondary="true" icon="SdkIcons.dependencies" anchor="right"
-                    factoryClass="com.github.pberdnik.dependencyhighlighter.newplugin.toolwindow.DependenciesToolWindowFactory"/>
-        
         <editorTabColorProvider
                 implementation="com.github.pberdnik.dependencyhighlighter.fileui.ProjectPanelColorProvider" />
     </extensions>

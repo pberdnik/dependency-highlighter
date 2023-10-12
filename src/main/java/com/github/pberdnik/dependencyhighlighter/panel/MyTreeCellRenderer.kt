@@ -14,9 +14,7 @@ import com.intellij.usageView.UsageViewBundle
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
-class MyTreeCellRenderer(
-        private var mGraphStorageService: GraphStorageService
-) : ColoredTreeCellRenderer() {
+class MyTreeCellRenderer: ColoredTreeCellRenderer() {
     override fun customizeCellRenderer(
             tree: JTree,
             value: Any,
@@ -36,33 +34,5 @@ class MyTreeCellRenderer(
             append(UsageViewBundle.message("node.invalid") + " ", SimpleTextAttributes.ERROR_ATTRIBUTES)
         }
         append(value.toString(), if (value.hasMarked() && !selected) SimpleTextAttributes.ERROR_ATTRIBUTES else SimpleTextAttributes.REGULAR_ATTRIBUTES)
-        val psiElement: PsiElement? = value.psiElement
-        if (psiElement is PsiFile) {
-            val path = psiElement.virtualFile.path
-            val nodeView = mGraphStorageService.nodeViews[path]
-            if (nodeView is FileNodeView) {
-                var textColor = REGULAR_TEXT
-                val fileNodeViewColor: FileNodeViewColor = nodeView.color
-                if (fileNodeViewColor === FileNodeViewColor.GREEN) {
-                    textColor = GREEN_TEXT
-                } else if (fileNodeViewColor === FileNodeViewColor.RED) {
-                    textColor = RED_TEXT
-                } else if (fileNodeViewColor === FileNodeViewColor.YELLOW) {
-                    textColor = YELLOW_TEXT
-                } else if (fileNodeViewColor === FileNodeViewColor.GRAY) {
-                    textColor = GRAY_TEXT
-                }
-                append(" " + nodeView.size + " [" + nodeView.depth + "]", textColor!!)
-                if (nodeView.isCycle) append(" {C}", RED_TEXT)
-            }
-        }
-    }
-
-    companion object {
-        private val REGULAR_TEXT = SimpleTextAttributes.REGULAR_ATTRIBUTES
-        private val GREEN_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.green.darker(), JBColor.green))
-        private val RED_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.red.darker(), JBColor.red))
-        private val YELLOW_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.yellow.darker(), JBColor.yellow))
-        private val GRAY_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor.GRAY)
     }
 }

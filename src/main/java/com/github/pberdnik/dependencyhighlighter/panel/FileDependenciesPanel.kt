@@ -20,6 +20,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.MyDependenciesBuilder
+import com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction
 import com.intellij.packageDependencies.actions.MyBackwardDependenciesBuilder
 import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.packageDependencies.ui.*
@@ -60,9 +61,9 @@ class FileDependenciesPanel(
     private var mSelectedPsiFile: PsiFile? = null
 
     init {
-        val main = myBuilders[0]
+        val main = if (myBuilders.isNotEmpty()) myBuilders[0] else null
         myScopeOfInterest = if (main is MyBackwardDependenciesBuilder) main.scopeOfInterest else null
-        myTransitiveBorder = if (main is MyForwardDependenciesBuilder) main.transitiveBorder else 0
+        myTransitiveBorder = 0
         myDependencies = HashMap()
         myIllegalDependencies = HashMap()
         for (builder in myBuilders) {
@@ -108,7 +109,7 @@ class FileDependenciesPanel(
 
     private fun createToolbar(): JComponent {
         val group = DefaultActionGroup()
-        group.add(CloseAction(project, mySettings, myContent))
+        group.add(MyAnalyzeDependenciesAction())
         group.add(FlattenPackagesAction(mySettings, ::rebuild))
         mySettings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
@@ -118,12 +119,8 @@ class FileDependenciesPanel(
                 mySettings.UI_SHOW_MODULE_GROUPS = true
             }
         }
-        group.add(GroupByScopeTypeAction(mySettings, ::rebuild))
-        group.add(FilterLegalsAction(mySettings, ::rebuild, ::setEmptyText))
-        group.add(MarkAsIllegalAction(project, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders))
-        group.add(ChooseScopeTypeAction(mySettings, ::rebuild))
-        group.add(EditDependencyRulesAction(project, ::rebuild))
         val toolbar = ActionManager.getInstance().createActionToolbar("PackageDependencies", group, true)
+        toolbar.targetComponent = this
         return toolbar.component
     }
 
@@ -144,7 +141,7 @@ class FileDependenciesPanel(
     }
 
     private fun initTree(tree: MyTree) {
-        tree.setCellRenderer(MyTreeCellRenderer(mGraphStorageService))
+        tree.setCellRenderer(MyTreeCellRenderer())
         tree.setRootVisible(false)
         tree.setShowsRootHandles(true)
         TreeUtil.installActions(tree)

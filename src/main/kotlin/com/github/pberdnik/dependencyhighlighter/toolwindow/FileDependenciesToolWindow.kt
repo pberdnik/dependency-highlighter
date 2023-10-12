@@ -17,16 +17,8 @@ private const val GREEN_MODULES = "Green Modules"
 class FileDependenciesToolWindow(private val project: Project) {
     private var contentManager: ContentManager? = null
 
-    fun initToolWindow(toolWindow: ToolWindow) {
-        project.service<StartupManager>().runAfterOpened {
-            SwingUtilities.invokeLater {
-                contentManager = toolWindow.contentManager
-                toolWindow.setAvailable(true, null)
-                val panel = ModulesPanel(project)
-                val content = ContentFactory.getInstance().createContent(panel, GREEN_MODULES, false)
-                addContent(content)
-            }
-        }
+    fun setContentManager(contentManager: ContentManager) {
+         this.contentManager = contentManager
     }
 
     fun addContent(content: Content) {
@@ -37,7 +29,7 @@ class FileDependenciesToolWindow(private val project: Project) {
                 removeContentsExceptModules(contentManager)
                 contentManager.addContent(content)
                 contentManager.setSelectedContent(content)
-//                ToolWindowManager.getInstance(project).getToolWindow("File Dependencies")!!.activate(null)
+                ToolWindowManager.getInstance(project).getToolWindow("Analyse Dependencies")!!.activate(null)
             }
         }
     }

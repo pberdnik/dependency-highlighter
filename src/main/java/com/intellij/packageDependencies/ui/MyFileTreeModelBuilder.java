@@ -114,8 +114,8 @@ public class MyFileTreeModelBuilder {
         myModuleDirNodes.put(DependencyType.BACKWARD, new HashMap<>());
         myModuleDirNodes.put(DependencyType.CYCLE, new HashMap<>());
 
-        mForwardDependenciesNode = new GeneralGroupNode("Forward dependencies", AllIcons.General.ArrowRight, myProject);
-        mBackwardDependenciesNode = new GeneralGroupNode("Backward dependencies", AllIcons.General.ArrowLeft, myProject);
+        mForwardDependenciesNode = new GeneralGroupNode("Uses", AllIcons.General.ArrowRight, myProject);
+        mBackwardDependenciesNode = new GeneralGroupNode("Is used by", AllIcons.General.ArrowLeft, myProject);
         mCycleDependenciesNode = new GeneralGroupNode("Cycle", AllIcons.General.Error, myProject);
 
         myRoot.add(mForwardDependenciesNode);
