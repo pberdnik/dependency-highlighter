@@ -1,14 +1,8 @@
 package com.github.pberdnik.dependencyhighlighter.panel
 
-import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
-import com.github.pberdnik.dependencyhighlighter.views.FileNodeView
-import com.github.pberdnik.dependencyhighlighter.views.FileNodeViewColor
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
 import com.intellij.ui.ColoredTreeCellRenderer
-import com.intellij.ui.JBColor
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.usageView.UsageViewBundle
 import javax.swing.JTree

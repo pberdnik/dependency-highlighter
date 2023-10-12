@@ -1,18 +1,10 @@
 package com.github.pberdnik.dependencyhighlighter.fileui
 
-import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
-import com.github.pberdnik.dependencyhighlighter.views.DirNodeView
-import com.github.pberdnik.dependencyhighlighter.views.FileNodeView
-import com.github.pberdnik.dependencyhighlighter.views.FileNodeViewColor
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ProjectViewNodeDecorator
-import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiUtilCore
 import com.intellij.ui.JBColor
@@ -21,8 +13,6 @@ import com.intellij.ui.SimpleTextAttributes
 private val REGULAR_TEXT = SimpleTextAttributes.REGULAR_ATTRIBUTES
 private val GREEN_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.green.darker(), JBColor.green))
 private val RED_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.red.darker(), JBColor.red))
-private val YELLOW_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor(JBColor.yellow.darker(), JBColor.yellow))
-private val GRAY_TEXT = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor.GRAY)
 
 class DependenciesProjectViewNodeDecorator(val project: Project) : ProjectViewNodeDecorator {
 

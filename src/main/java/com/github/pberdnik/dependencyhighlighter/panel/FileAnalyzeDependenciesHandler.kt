@@ -17,17 +17,16 @@ package com.github.pberdnik.dependencyhighlighter.panel
 
 import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow
 import com.intellij.analysis.AnalysisScope
-import com.intellij.analysis.PerformAnalysisInBackgroundOption
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.components.service
-import com.intellij.openapi.progress.*
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.NlsContexts.TabTitle
 import com.intellij.packageDependencies.MyDependenciesBuilder
-import com.intellij.packageDependencies.actions.MyBackwardDependenciesBuilder
 import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.psi.PsiFile
 import com.intellij.ui.content.ContentFactory

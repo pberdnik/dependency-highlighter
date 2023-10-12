@@ -1,9 +1,10 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.pberdnik.dependencyhighlighter.panel
 
-import com.github.pberdnik.dependencyhighlighter.panel.actions.*
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
-import com.github.pberdnik.dependencyhighlighter.storage.GraphStorageService
+import com.github.pberdnik.dependencyhighlighter.panel.actions.AddToScopeAction
+import com.github.pberdnik.dependencyhighlighter.panel.actions.FlattenPackagesAction
+import com.github.pberdnik.dependencyhighlighter.panel.actions.ShowDetailedInformationAction
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
 import com.intellij.ide.impl.FlattenModulesToggleAction
@@ -21,7 +22,6 @@ import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.MyDependenciesBuilder
 import com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction
-import com.intellij.packageDependencies.actions.MyBackwardDependenciesBuilder
 import com.intellij.packageDependencies.ui.*
 import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
 import com.intellij.psi.PsiFile
@@ -57,12 +57,10 @@ class FileDependenciesPanel(
     private val mySettings = DependencyPanelSettings()
     private val myScopeOfInterest: AnalysisScope?
     private val myTransitiveBorder: Int
-    private val mGraphStorageService: GraphStorageService
     private var mSelectedPsiFile: PsiFile? = null
 
     init {
-        val main = if (myBuilders.isNotEmpty()) myBuilders[0] else null
-        myScopeOfInterest = if (main is MyBackwardDependenciesBuilder) main.scopeOfInterest else null
+        myScopeOfInterest = null
         myTransitiveBorder = 0
         myDependencies = HashMap()
         myBackwardDependencies = HashMap()
@@ -73,7 +71,6 @@ class FileDependenciesPanel(
         }
         buildBackwardFromForwardDependencies()
         exclude(myExcluded)
-        mGraphStorageService = project.getService(GraphStorageService::class.java)
         add(ScrollPaneFactory.createScrollPane(myRightTree), BorderLayout.CENTER)
         add(createToolbar(), BorderLayout.NORTH)
         myRightTreeExpansionMonitor = PackageTreeExpansionMonitor.install(myRightTree, this.project)
