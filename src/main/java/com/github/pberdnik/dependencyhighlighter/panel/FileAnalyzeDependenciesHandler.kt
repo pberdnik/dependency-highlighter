@@ -15,7 +15,6 @@
  */
 package com.github.pberdnik.dependencyhighlighter.panel
 
-import com.github.pberdnik.dependencyhighlighter.actions.performAction
 import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow
 import com.intellij.analysis.AnalysisScope
 import com.intellij.analysis.PerformAnalysisInBackgroundOption
@@ -28,6 +27,7 @@ import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NlsContexts.TabTitle
 import com.intellij.packageDependencies.MyDependenciesBuilder
+import com.intellij.packageDependencies.actions.MyBackwardDependenciesBuilder
 import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.psi.PsiFile
 import com.intellij.ui.content.ContentFactory
@@ -51,7 +51,10 @@ class FileAnalyzeDependenciesHandler(
     private val progressTitle: String
         get() = CodeInsightBundle.message("package.dependencies.progress.title")
 
-    private fun perform(builders: MutableList<MyDependenciesBuilder>, indicator: ProgressIndicator) {
+    private fun perform(
+            builders: MutableList<MyDependenciesBuilder>,
+            indicator: ProgressIndicator,
+    ) {
         try {
             for (scope in scopes) {
                 builders.add(MyForwardDependenciesBuilder(project, scope, myTransitiveBorder))
@@ -63,7 +66,7 @@ class FileAnalyzeDependenciesHandler(
             for (builder in builders) {
                 myDependencies.putAll(builder.dependencies)
             }
-            performAction(myDependencies, project)
+//            performAction(myDependencies, project)
         } catch (e: IndexNotReadyException) {
             DumbService.getInstance(project).showDumbModeNotification(
                     CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))

@@ -22,7 +22,6 @@ import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.MyDependenciesBuilder
 import com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction
 import com.intellij.packageDependencies.actions.MyBackwardDependenciesBuilder
-import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.packageDependencies.ui.*
 import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
 import com.intellij.psi.PsiFile
@@ -47,6 +46,7 @@ class FileDependenciesPanel(
         private val myExcluded: MutableSet<PsiFile>
 ) : JPanel(BorderLayout()), Disposable, DataProvider {
     private val myDependencies: MutableMap<PsiFile, Set<PsiFile>>
+    private val myBackwardDependencies: MutableMap<PsiFile, MutableSet<PsiFile>>
     private var myIllegalDependencies: MutableMap<VirtualFile, MutableMap<DependencyRule, MutableSet<PsiFile>>?>
     private val myLeftTree = MyTree()
     private val myRightTree = MyTree()
@@ -65,11 +65,13 @@ class FileDependenciesPanel(
         myScopeOfInterest = if (main is MyBackwardDependenciesBuilder) main.scopeOfInterest else null
         myTransitiveBorder = 0
         myDependencies = HashMap()
+        myBackwardDependencies = HashMap()
         myIllegalDependencies = HashMap()
         for (builder in myBuilders) {
             myDependencies.putAll(builder.dependencies)
             putAllDependencies(builder)
         }
+        buildBackwardFromForwardDependencies()
         exclude(myExcluded)
         mGraphStorageService = project.getService(GraphStorageService::class.java)
         add(ScrollPaneFactory.createScrollPane(myRightTree), BorderLayout.CENTER)
@@ -91,6 +93,19 @@ class FileDependenciesPanel(
         })
         initTree(myRightTree)
         setEmptyText(mySettings.UI_FILTER_LEGALS)
+    }
+
+    private fun buildBackwardFromForwardDependencies() {
+        myDependencies.forEach { (psiFile, depsSet) ->
+            depsSet.forEach { psiDep ->
+                if (myBackwardDependencies.contains(psiDep)) {
+                    myBackwardDependencies[psiDep]?.add(psiFile)
+                } else {
+                    val set = hashSetOf(psiFile)
+                    myBackwardDependencies[psiDep] = set
+                }
+            }
+        }
     }
 
     private fun putAllDependencies(builder: MyDependenciesBuilder) {
@@ -172,22 +187,16 @@ class FileDependenciesPanel(
                     }
                 }
             }
-            val forwardFiles = mGraphStorageService.getForwardDepsForPath(psiFile.virtualFile.path) //
-            for (file in forwardFiles) {
+            val depFiles = myDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            for (file in depFiles) {
                 if (file.isValid) {
                     forwardDeps.add(file)
                 }
             }
-            val backwardFiles = mGraphStorageService.getBackwardDepsForPath(psiFile.virtualFile.path) //
-            for (file in backwardFiles) {
+            val backDepFiles = myBackwardDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            for (file in backDepFiles) {
                 if (file.isValid) {
                     backwardDeps.add(file)
-                }
-            }
-            val cycleFiles = mGraphStorageService.getCycleDepsForPath(psiFile.virtualFile.path) //
-            for (file in cycleFiles) {
-                if (file.isValid) {
-                    cycleDeps.add(file)
                 }
             }
         }
