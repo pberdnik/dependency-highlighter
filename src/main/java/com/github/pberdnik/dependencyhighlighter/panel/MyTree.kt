@@ -2,6 +2,7 @@ package com.github.pberdnik.dependencyhighlighter.panel
 
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataProvider
+import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
 import com.intellij.psi.PsiFile
 import com.intellij.ui.treeStructure.Tree
@@ -13,9 +14,24 @@ class MyTree : Tree(), DataProvider {
         if (CommonDataKeys.NAVIGATABLE.`is`(dataId)) {
             return node
         }
-        if (CommonDataKeys.PSI_ELEMENT.`is`(dataId) && node != null) {
-            val element = node.psiElement
-            return if (element != null && element.isValid) element else null
+        if (PlatformCoreDataKeys.BGT_DATA_PROVIDER.`is`(dataId)) {
+            return getBackgroundDataProvider()
+        }
+        return null
+    }
+
+    private fun getBackgroundDataProvider(): DataProvider? {
+        val node: PackageDependenciesNode? = selectedNode
+        if (node != null) {
+            return DataProvider { otherId ->
+                if (CommonDataKeys.PSI_ELEMENT.`is`(otherId)) {
+                    val element = node.psiElement
+                    return@DataProvider if (element != null && element.isValid) element else null
+                } else {
+                    null
+                }
+            }
+
         }
         return null
     }

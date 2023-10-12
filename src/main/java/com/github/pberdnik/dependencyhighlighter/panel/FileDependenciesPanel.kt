@@ -225,16 +225,28 @@ class FileDependenciesPanel(
     }
 
     override fun getData(dataId: @NonNls String): @NonNls Any? {
-        if (CommonDataKeys.PSI_ELEMENT.`is`(dataId)) {
-            val selectedNode: PackageDependenciesNode? = myRightTree.selectedNode
-            if (selectedNode != null) {
-                val element = selectedNode.psiElement
-                return if (element != null && element.isValid) element else null
-            }
+        if (PlatformCoreDataKeys.BGT_DATA_PROVIDER.`is`(dataId)) {
+            return getBackgroundDataProvider()
         }
         return if (PlatformDataKeys.HELP_ID.`is`(dataId)) {
             "dependency.viewer.tool.window"
         } else null
+    }
+
+    private fun getBackgroundDataProvider(): DataProvider? {
+        val selectedNode: PackageDependenciesNode? = myRightTree.selectedNode
+        if (selectedNode != null) {
+            return DataProvider { otherId ->
+                if (CommonDataKeys.PSI_ELEMENT.`is`(otherId)) {
+                    val element = selectedNode.psiElement
+                    return@DataProvider if (element != null && element.isValid) element else null
+                } else {
+                    null
+                }
+            }
+
+        }
+        return null
     }
 
     private fun setEmptyText(flag: Boolean) {
