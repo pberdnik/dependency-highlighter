@@ -6,7 +6,7 @@ import com.intellij.psi.xml.XmlFile
 import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.PsiErrorElementUtil
-import com.github.pberdnik.dependencyhighlighter.services.MyProjectService
+import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 
 @TestDataPath("\$CONTENT_ROOT/src/test/testData")
 class MyPluginTest : BasePlatformTestCase() {
@@ -30,7 +30,7 @@ class MyPluginTest : BasePlatformTestCase() {
     }
 
     fun testProjectService() {
-        val projectService = project.service<MyProjectService>()
+        val projectService = project.service<ProjectViewUiStateService>()
 
         assertNotSame(projectService.getRandomNumber(), projectService.getRandomNumber())
     }
