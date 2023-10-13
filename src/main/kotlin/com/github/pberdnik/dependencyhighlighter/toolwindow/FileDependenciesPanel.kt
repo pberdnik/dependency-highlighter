@@ -80,7 +80,8 @@ class FileDependenciesPanel(
             }
 
             override fun selectionChanged(event: FileEditorManagerEvent) {
-                mSelectedPsiFile = PsiManager.getInstance(project).findFile(event.newFile)
+                val newFile = event.newFile ?: return
+                mSelectedPsiFile = PsiManager.getInstance(project).findFile(newFile)
                 updateRightTreeModel()
             }
         })

@@ -19,7 +19,7 @@ class MyTreeCellRenderer: ColoredTreeCellRenderer() {
             hasFocus: Boolean
     ) {
         if (value !is PackageDependenciesNode) {
-            thisLogger().error("value type should be PackageDependenciesNode but is " + value.javaClass + "; And value is " + (value as DefaultMutableTreeNode).path.contentToString())
+//            thisLogger().error("value type should be PackageDependenciesNode but is " + value.javaClass + "; And value is " + (value as DefaultMutableTreeNode).path.contentToString())
             return
         }
         if (value.isValid) {
