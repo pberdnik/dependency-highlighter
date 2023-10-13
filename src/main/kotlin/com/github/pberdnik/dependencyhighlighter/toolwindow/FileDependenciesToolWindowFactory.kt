@@ -1,6 +1,5 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-import com.github.pberdnik.dependencyhighlighter.panel.FileDependenciesPanel
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow

@@ -1,7 +1,9 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
-import com.github.pberdnik.dependencyhighlighter.panel.MyTree
-import com.github.pberdnik.dependencyhighlighter.panel.getSelectedScope
+import com.github.pberdnik.dependencyhighlighter.actions.MyForwardDependenciesBuilder
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyDependenciesBuilder
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyTree
+import com.github.pberdnik.dependencyhighlighter.toolwindow.getSelectedScope
 import com.intellij.analysis.AnalysisScope
 import com.intellij.analysis.PerformAnalysisInBackgroundOption
 import com.intellij.codeInsight.CodeInsightBundle
@@ -16,8 +18,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.packageDependencies.MyDependenciesBuilder
-import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.packageDependencies.ui.DependenciesPanel
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
 import com.intellij.psi.PsiFile

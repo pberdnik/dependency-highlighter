@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.panel
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataProvider
@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
 import com.intellij.psi.PsiFile
 import com.intellij.ui.treeStructure.Tree
-import java.util.HashSet
 
 class MyTree : Tree(), DataProvider {
     override fun getData(dataId: String): Any? {

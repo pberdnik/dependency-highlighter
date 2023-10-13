@@ -1,8 +1,8 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
-import com.github.pberdnik.dependencyhighlighter.panel.FileDependenciesPanel
-import com.github.pberdnik.dependencyhighlighter.panel.MyTree
-import com.github.pberdnik.dependencyhighlighter.panel.getSelectedScope
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyDependenciesBuilder
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyTree
+import com.github.pberdnik.dependencyhighlighter.toolwindow.getSelectedScope
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -13,7 +13,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.DependencyValidationManager
-import com.intellij.packageDependencies.MyDependenciesBuilder
 import com.intellij.packageDependencies.ui.DependenciesPanel
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
 import com.intellij.packageDependencies.ui.PatternDialectProvider

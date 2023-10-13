@@ -1,27 +1,27 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
 import com.intellij.codeInsight.CodeInsightBundle
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.ui.DependenciesPanel
-import com.intellij.util.PlatformIcons
 
-class FlattenPackagesAction(
+class GroupByScopeTypeAction(
         private val mySettings: DependenciesPanel.DependencyPanelSettings,
         private val rebuild: () -> Unit,
-) : ToggleAction(CodeInsightBundle.messagePointer("action.flatten.packages"), CodeInsightBundle.messagePointer("action.flatten.packages"),
-        PlatformIcons.FLATTEN_PACKAGES_ICON) {
+) : ToggleAction(CodeInsightBundle.messagePointer("action.group.by.scope.type"),
+        CodeInsightBundle.messagePointer("action.group.by.scope.type.description"), AllIcons.Actions.GroupByTestProduction) {
     override fun isSelected(event: AnActionEvent): Boolean {
-        return mySettings.UI_FLATTEN_PACKAGES
+        return mySettings.UI_GROUP_BY_SCOPE_TYPE
     }
 
     override fun setSelected(event: AnActionEvent, flag: Boolean) {
-        DependencyUISettings.getInstance().UI_FLATTEN_PACKAGES = flag
-        mySettings.UI_FLATTEN_PACKAGES = flag
+        DependencyUISettings.getInstance().UI_GROUP_BY_SCOPE_TYPE = flag
+        mySettings.UI_GROUP_BY_SCOPE_TYPE = flag
         rebuild()
     }
 
-    override fun getActionUpdateThread() = ActionUpdateThread.EDT
+    override fun getActionUpdateThread() = ActionUpdateThread.BGT
 }

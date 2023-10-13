@@ -13,145 +13,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.intellij.packageDependencies;
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-import com.intellij.analysis.AnalysisScope;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectUtilCore;
-import com.intellij.openapi.util.NlsSafe;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.impl.PsiFileEx;
-import org.jetbrains.annotations.Nls;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.*;
+import com.intellij.analysis.AnalysisScope
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.displayUrlRelativeToProject
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.packageDependencies.DependenciesBuilder
+import com.intellij.packageDependencies.DependencyVisitorFactory
+import com.intellij.packageDependencies.DependencyVisitorFactory.VisitorOptions
+import com.intellij.psi.PsiFile
+import com.intellij.psi.impl.PsiFileEx
 
 /**
  * @author anna
  */
-public abstract class MyDependenciesBuilder {
-  private final Project myProject;
-  private final AnalysisScope myScope;
-  private final Map<PsiFile, Set<PsiFile>> myDependencies = new HashMap<>();
-  protected int myTotalFileCount;
-  protected int myFileCount = 0;
+abstract class MyDependenciesBuilder protected constructor(val project: Project, val scope: AnalysisScope) {
+    val dependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
+    protected var myTotalFileCount: Int = scope.fileCount
+    protected var myFileCount = 0
 
-  protected MyDependenciesBuilder(@NotNull final Project project, @NotNull final AnalysisScope scope) {
-    myProject = project;
-    myScope = scope;
-    myTotalFileCount = scope.getFileCount();
-  }
+    abstract fun analyze()
 
-  public void setInitialFileCount(final int fileCount) {
-    myFileCount = fileCount;
-  }
-
-  public void setTotalFileCount(final int totalFileCount) {
-    myTotalFileCount = totalFileCount;
-  }
-
-  @NotNull
-  public Map<PsiFile, Set<PsiFile>> getDependencies() {
-    return myDependencies;
-  }
-
-  @NotNull
-  public Map<PsiFile, Set<PsiFile>> getDirectDependencies() {
-    return getDependencies();
-  }
-
-  @NotNull
-  public AnalysisScope getScope() {
-    return myScope;
-  }
-
-  @NotNull
-  public Project getProject() {
-    return myProject;
-  }
-
-  public abstract @Nls String getRootNodeNameInUsageView();
-
-  public abstract @Nls String getInitialUsagesPosition();
-
-  public abstract boolean isBackward();
-
-  public abstract void analyze();
-
-  public Map<PsiFile, Map<DependencyRule, Set<PsiFile>>> getIllegalDependencies(){
-    Map<PsiFile, Map<DependencyRule, Set<PsiFile>>> result = new HashMap<>();
-    DependencyValidationManager validator = DependencyValidationManager.getInstance(myProject);
-    for (PsiFile file : getDirectDependencies().keySet()) {
-      Set<PsiFile> deps = getDirectDependencies().get(file);
-      Map<DependencyRule, Set<PsiFile>> illegal = null;
-      for (PsiFile dependency : deps) {
-        final DependencyRule rule = isBackward() ?
-                                    validator.getViolatorDependencyRule(dependency, file) :
-                                    validator.getViolatorDependencyRule(file, dependency);
-        if (rule != null) {
-          if (illegal == null) {
-            illegal = new HashMap<>();
-            result.put(file, illegal);
-          }
-          Set<PsiFile> illegalFilesByRule = illegal.get(rule);
-          if (illegalFilesByRule == null) {
-            illegalFilesByRule = new HashSet<>();
-          }
-          illegalFilesByRule.add(dependency);
-          illegal.put(rule, illegalFilesByRule);
-        }
-      }
+    fun findPaths(from: PsiFile, to: PsiFile): List<List<PsiFile>> {
+        return findPaths(from, to, HashSet())
     }
-    return result;
-  }
 
-  public List<List<PsiFile>> findPaths(PsiFile from, PsiFile to) {
-    return findPaths(from, to, new HashSet<>());
-  }
-
-  private List<List<PsiFile>> findPaths(PsiFile from, PsiFile to, Set<? super PsiFile> processed) {
-    final List<List<PsiFile>> result = new ArrayList<>();
-    final Set<PsiFile> reachable = getDirectDependencies().get(from);
-    if (reachable != null) {
-      if (reachable.contains(to)) {
-        result.add(new ArrayList<>());
-        return result;
-      }
-      if (processed.add(from)) {
-        for (PsiFile file : reachable) {
-          if (!getScope().contains(file)) { //exclude paths through scope
-            final List<List<PsiFile>> paths = findPaths(file, to, processed);
-            for (List<PsiFile> path : paths) {
-              path.add(0, file);
+    private fun findPaths(from: PsiFile, to: PsiFile, processed: MutableSet<in PsiFile>): List<MutableList<PsiFile>> {
+        val result: MutableList<MutableList<PsiFile>> = ArrayList()
+        val reachable = dependencies[from]
+        if (reachable != null) {
+            if (reachable.contains(to)) {
+                result.add(ArrayList())
+                return result
             }
-            result.addAll(paths);
-          }
+            if (processed.add(from)) {
+                for (file in reachable) {
+                    if (!scope.contains(file)) { //exclude paths through scope
+                        val paths = findPaths(file, to, processed)
+                        for (path in paths) {
+                            path.add(0, file)
+                        }
+                        result.addAll(paths)
+                    }
+                }
+            }
         }
-      }
+        return result
     }
-    return result;
-  }
 
-  @NlsSafe
-  public String getRelativeToProjectPath(@NotNull VirtualFile virtualFile) {
-    return ProjectUtilCore.displayUrlRelativeToProject(virtualFile, virtualFile.getPresentableUrl(), getProject(), true, false);
-  }
-
-  public static void analyzeFileDependencies(@NotNull PsiFile file, @NotNull DependenciesBuilder.DependencyProcessor processor) {
-    analyzeFileDependencies(file, processor, DependencyVisitorFactory.VisitorOptions.fromSettings(file.getProject()));
-  }
-
-  public static void analyzeFileDependencies(@NotNull PsiFile file,
-                                             @NotNull DependenciesBuilder.DependencyProcessor processor,
-                                             @NotNull DependencyVisitorFactory.VisitorOptions options) {
-    Boolean prev = file.getUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING);
-    file.putUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING, Boolean.TRUE);
-    try {
-      file.accept(DependencyVisitorFactory.createVisitor(file, processor, options));
+    fun getRelativeToProjectPath(virtualFile: VirtualFile): String {
+        return displayUrlRelativeToProject(virtualFile, virtualFile.presentableUrl, project, isIncludeFilePath = true, moduleOnTheLeft = false)
     }
-    finally {
-      file.putUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING, prev);
+
+    companion object {
+        @JvmOverloads
+        fun analyzeFileDependencies(file: PsiFile,
+                                    options: VisitorOptions = VisitorOptions.fromSettings(file.project),
+                                    processor: DependenciesBuilder.DependencyProcessor) {
+            val prev = file.getUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING)
+            file.putUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING, java.lang.Boolean.TRUE)
+            try {
+                file.accept(DependencyVisitorFactory.createVisitor(file, processor, options))
+            } finally {
+                file.putUserData(PsiFileEx.BATCH_REFERENCE_PROCESSING, prev)
+            }
+        }
     }
-  }
 }

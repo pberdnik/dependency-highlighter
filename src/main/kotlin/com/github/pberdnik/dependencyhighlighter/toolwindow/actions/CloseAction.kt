@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
 import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow
 import com.intellij.CommonBundle

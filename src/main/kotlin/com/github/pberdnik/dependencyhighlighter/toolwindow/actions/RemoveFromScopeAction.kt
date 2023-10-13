@@ -1,7 +1,7 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
-import com.github.pberdnik.dependencyhighlighter.panel.MyTree
-import com.github.pberdnik.dependencyhighlighter.panel.getSelectedScope
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyTree
+import com.github.pberdnik.dependencyhighlighter.toolwindow.getSelectedScope
 import com.intellij.idea.ActionsBundle
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction

@@ -1,9 +1,6 @@
 package com.github.pberdnik.dependencyhighlighter.fileui
 
-import com.github.pberdnik.dependencyhighlighter.Colors
-import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.impl.EditorTabColorProvider
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile

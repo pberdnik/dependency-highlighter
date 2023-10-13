@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.panel
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.packageDependencies.ui.PackageDependenciesNode

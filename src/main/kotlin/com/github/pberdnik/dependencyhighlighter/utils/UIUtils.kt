@@ -16,12 +16,8 @@
 package com.github.pberdnik.dependencyhighlighter.utils
 
 import com.intellij.ide.projectView.ProjectView
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.project.Project
-import com.intellij.ui.ColorUtil
-import com.intellij.ui.JBColor
-import java.awt.Color
 import javax.swing.SwingUtilities
 
 object UIUtils {

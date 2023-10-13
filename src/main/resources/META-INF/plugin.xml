@@ -9,7 +9,7 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Analyse Dependencies" secondary="true" icon="SdkIcons.analysis" anchor="right"
+        <toolWindow id="Analyse Dependencies" secondary="true" icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.analysis" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
         <projectViewNodeDecorator
                 implementation="com.github.pberdnik.dependencyhighlighter.fileui.DependenciesProjectViewNodeDecorator"/>
@@ -18,10 +18,10 @@
     </extensions>
 
     <actions>
-        <action id="com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction"
-                class="com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction"
+        <action id="com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction"
+                class="com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction"
                 text="Extended Analyze Dependencies" description="Extended analyze dependencies"
-                icon="SdkIcons.dependencies">
+                icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.dependencies">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <override-text place="MainMenu" text="Extended Analyze Dependencies"/>
         </action>

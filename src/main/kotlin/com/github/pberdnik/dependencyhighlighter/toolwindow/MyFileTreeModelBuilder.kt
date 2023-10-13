@@ -13,396 +13,357 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-package com.intellij.packageDependencies.ui;
+import com.intellij.codeInsight.CodeInsightBundle
+import com.intellij.icons.AllIcons
+import com.intellij.ide.dnd.aware.DnDAwareTree
+import com.intellij.ide.projectView.impl.ModuleGroup
+import com.intellij.ide.projectView.impl.nodes.ProjectViewDirectoryHelper
+import com.intellij.ide.scopeView.nodes.BasePsiNode
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleGrouper
+import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.util.Comparing
+import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.packageDependencies.ui.*
+import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
+import com.intellij.psi.PsiDirectory
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.util.ui.tree.TreeUtil
+import java.util.*
+import javax.swing.JTree
+import javax.swing.SwingUtilities
+import javax.swing.tree.MutableTreeNode
+import javax.swing.tree.TreePath
 
-import com.intellij.codeInsight.CodeInsightBundle;
-import com.intellij.icons.AllIcons;
-import com.intellij.ide.dnd.aware.DnDAwareTree;
-import com.intellij.ide.projectView.impl.ModuleGroup;
-import com.intellij.ide.projectView.impl.nodes.ProjectViewDirectoryHelper;
-import com.intellij.ide.scopeView.nodes.BasePsiNode;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleGrouper;
-import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.roots.ProjectRootManager;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.Key;
-import com.intellij.openapi.util.NlsContexts;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.util.ui.tree.TreeUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, settings: DependencyPanelSettings) {
+    private val myFileIndex: ProjectFileIndex
+    private val myShowModuleGroups: Boolean
+    private val myShowModules: Boolean
+    private val myFlattenPackages: Boolean
+    private val myCompactEmptyMiddlePackages: Boolean
+    private var myShowFiles: Boolean
+    private val myMarker: Marker?
+    private val myAddUnmarkedFiles: Boolean
+    private val myRoot: PackageDependenciesNode
+    private val myModuleDirNodes: MutableMap<DependencyType, MutableMap<VirtualFile, DirectoryNode>> = EnumMap(DependencyType::class.java)
+    private val myModuleNodes: MutableMap<DependencyType, MutableMap<Module, ModuleNode>> = EnumMap(DependencyType::class.java)
+    private val myModuleGroupNodes: MutableMap<DependencyType, MutableMap<String, ModuleGroupNode>> = EnumMap(DependencyType::class.java)
+    private val myGrouper: ModuleGrouper
+    private var myExternalNode: GeneralGroupNode? = null
+    private val mForwardDependenciesNode: GeneralGroupNode
+    private val mBackwardDependenciesNode: GeneralGroupNode
+    private val mCycleDependenciesNode: GeneralGroupNode
+    private var myScannedFileCount = 0
+    private var myTotalFileCount = 0
+    private var myMarkedFileCount = 0
+    private var myTree: JTree? = null
+    protected val myBaseDir: VirtualFile
+    protected var myContentRoots: Array<VirtualFile>
 
-import javax.swing.*;
-import javax.swing.tree.MutableTreeNode;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import java.util.*;
-
-public class MyFileTreeModelBuilder {
-    private static final Logger LOG = Logger.getInstance(MyFileTreeModelBuilder.class);
-
-    public static final Key<Integer> FILE_COUNT = Key.create("FILE_COUNT");
-    private final ProjectFileIndex myFileIndex;
-    private final Project myProject;
-
-    private final boolean myShowModuleGroups;
-    private final boolean myShowModules;
-
-    private final boolean myFlattenPackages;
-    private final boolean myCompactEmptyMiddlePackages;
-    private boolean myShowFiles;
-    private final Marker myMarker;
-    private final boolean myAddUnmarkedFiles;
-    private final PackageDependenciesNode myRoot;
-    private final Map<DependencyType, Map<VirtualFile, DirectoryNode>> myModuleDirNodes = new HashMap<>();
-    private final Map<DependencyType, Map<Module, ModuleNode>> myModuleNodes = new HashMap<>();
-    private final Map<DependencyType, Map<String, ModuleGroupNode>> myModuleGroupNodes = new HashMap<>();
-    private final ModuleGrouper myGrouper;
-    private GeneralGroupNode myExternalNode;
-
-    private GeneralGroupNode mForwardDependenciesNode;
-    private GeneralGroupNode mBackwardDependenciesNode;
-    private GeneralGroupNode mCycleDependenciesNode;
-
-    private int myScannedFileCount = 0;
-    private int myTotalFileCount = 0;
-    private int myMarkedFileCount = 0;
-
-    private JTree myTree;
-    protected final VirtualFile myBaseDir;
-    protected VirtualFile[] myContentRoots;
-
-    public MyFileTreeModelBuilder(@NotNull Project project, Marker marker, DependenciesPanel.DependencyPanelSettings settings) {
-        myProject = project;
-        myBaseDir = myProject.getBaseDir();
-        myContentRoots = ProjectRootManager.getInstance(myProject).getContentRoots();
-        final boolean multiModuleProject = ModuleManager.getInstance(myProject).getModules().length > 1;
-        myShowModules = settings.UI_SHOW_MODULES && multiModuleProject;
-        myGrouper = ModuleGrouper.instanceFor(project);
-        final ProjectViewDirectoryHelper directoryHelper = ProjectViewDirectoryHelper.getInstance(myProject);
-        myFlattenPackages = directoryHelper.supportsFlattenPackages() && settings.UI_FLATTEN_PACKAGES;
-        myCompactEmptyMiddlePackages = directoryHelper.supportsHideEmptyMiddlePackages() && settings.UI_COMPACT_EMPTY_MIDDLE_PACKAGES;
-        myShowFiles = settings.UI_SHOW_FILES;
-        myShowModuleGroups = settings.UI_SHOW_MODULE_GROUPS && multiModuleProject;
-        myMarker = marker;
-        myAddUnmarkedFiles = !settings.UI_FILTER_LEGALS;
-        myRoot = new RootNode(myProject);
-        myFileIndex = ProjectRootManager.getInstance(project).getFileIndex();
-
-        myModuleNodes.put(DependencyType.FORWARD, new HashMap<>());
-        myModuleNodes.put(DependencyType.BACKWARD, new HashMap<>());
-        myModuleNodes.put(DependencyType.CYCLE, new HashMap<>());
-
-        myModuleGroupNodes.put(DependencyType.FORWARD, new HashMap<>());
-        myModuleGroupNodes.put(DependencyType.BACKWARD, new HashMap<>());
-        myModuleGroupNodes.put(DependencyType.CYCLE, new HashMap<>());
-
-        myModuleDirNodes.put(DependencyType.FORWARD, new HashMap<>());
-        myModuleDirNodes.put(DependencyType.BACKWARD, new HashMap<>());
-        myModuleDirNodes.put(DependencyType.CYCLE, new HashMap<>());
-
-        mForwardDependenciesNode = new GeneralGroupNode("Uses", AllIcons.General.ArrowRight, myProject);
-        mBackwardDependenciesNode = new GeneralGroupNode("Is used by", AllIcons.General.ArrowLeft, myProject);
-        mCycleDependenciesNode = new GeneralGroupNode("Cycle", AllIcons.General.Error, myProject);
-
-        myRoot.add(mForwardDependenciesNode);
-        myRoot.add(mBackwardDependenciesNode);
+    init {
+        myBaseDir = myProject.baseDir
+        myContentRoots = ProjectRootManager.getInstance(myProject).contentRoots
+        val multiModuleProject = ModuleManager.getInstance(myProject).modules.size > 1
+        myShowModules = settings.UI_SHOW_MODULES && multiModuleProject
+        myGrouper = ModuleGrouper.instanceFor(myProject)
+        val directoryHelper = ProjectViewDirectoryHelper.getInstance(myProject)
+        myFlattenPackages = directoryHelper.supportsFlattenPackages() && settings.UI_FLATTEN_PACKAGES
+        myCompactEmptyMiddlePackages = directoryHelper.supportsHideEmptyMiddlePackages() && settings.UI_COMPACT_EMPTY_MIDDLE_PACKAGES
+        myShowFiles = settings.UI_SHOW_FILES
+        myShowModuleGroups = settings.UI_SHOW_MODULE_GROUPS && multiModuleProject
+        myMarker = marker
+        myAddUnmarkedFiles = !settings.UI_FILTER_LEGALS
+        myRoot = RootNode(myProject)
+        myFileIndex = ProjectRootManager.getInstance(myProject).fileIndex
+        myModuleNodes[DependencyType.FORWARD] = HashMap()
+        myModuleNodes[DependencyType.BACKWARD] = HashMap()
+        myModuleNodes[DependencyType.CYCLE] = HashMap()
+        myModuleGroupNodes[DependencyType.FORWARD] = HashMap()
+        myModuleGroupNodes[DependencyType.BACKWARD] = HashMap()
+        myModuleGroupNodes[DependencyType.CYCLE] = HashMap()
+        myModuleDirNodes[DependencyType.FORWARD] = HashMap()
+        myModuleDirNodes[DependencyType.BACKWARD] = HashMap()
+        myModuleDirNodes[DependencyType.CYCLE] = HashMap()
+        mForwardDependenciesNode = GeneralGroupNode("Uses", AllIcons.General.ArrowRight, myProject)
+        mBackwardDependenciesNode = GeneralGroupNode("Is used by", AllIcons.General.ArrowLeft, myProject)
+        mCycleDependenciesNode = GeneralGroupNode("Cycle", AllIcons.General.Error, myProject)
+        myRoot.add(mForwardDependenciesNode)
+        myRoot.add(mBackwardDependenciesNode)
     }
 
-    public void setTree(DnDAwareTree tree) {
-        myTree = tree;
+    fun setTree(tree: DnDAwareTree?) {
+        myTree = tree
     }
 
-    public static synchronized TreeModel createTreeModel(Project project, boolean showProgress, Set<VirtualFile> forwardFiles, Set<VirtualFile> backwardFiles, Set<VirtualFile> cycleFiles, Marker marker, DependenciesPanel.DependencyPanelSettings settings) {
-        return new MyFileTreeModelBuilder(project, marker, settings).build(forwardFiles, backwardFiles, cycleFiles, showProgress);
-    }
-
-    private void countFiles(Project project) {
-        final Integer fileCount = project.getUserData(FILE_COUNT);
+    private fun countFiles(project: Project) {
+        val fileCount = project.getUserData(FILE_COUNT)
         if (fileCount == null) {
-            myFileIndex.iterateContent(fileOrDir -> {
-                if (!fileOrDir.isDirectory()) {
-                    counting();
+            myFileIndex.iterateContent { fileOrDir: VirtualFile ->
+                if (!fileOrDir.isDirectory) {
+                    counting()
                 }
-                return true;
-            });
-            project.putUserData(FILE_COUNT, myTotalFileCount);
+                true
+            }
+            project.putUserData(FILE_COUNT, myTotalFileCount)
         } else {
-            myTotalFileCount = fileCount.intValue();
+            myTotalFileCount = fileCount
         }
     }
 
-    public static void clearCaches(Project project) {
-        project.putUserData(FILE_COUNT, null);
-    }
-
-    private void counting() {
-        myTotalFileCount++;
-        ProgressIndicator indicator = ProgressManager.getInstance().getProgressIndicator();
+    private fun counting() {
+        myTotalFileCount++
+        val indicator = ProgressManager.getInstance().progressIndicator
         if (indicator != null) {
-            update(indicator, true, -1);
+            update(indicator, true, -1.0)
         }
     }
 
-    private static void update(ProgressIndicator indicator, boolean indeterminate, double fraction) {
-        if (indicator instanceof PanelProgressIndicator) {
-            ((PanelProgressIndicator) indicator).update(getScanningPackagesMessage(), indeterminate, fraction);
-        } else {
-            if (fraction != -1) {
-                indicator.setFraction(fraction);
-            }
-        }
-    }
-
-    private TreeModel build(Set<VirtualFile> forwardFiles, Set<VirtualFile> backwardFiles, Set<VirtualFile> cycleFiles, boolean showProgress) {
-        myShowFiles = true;
-
+    private fun build(forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, showProgress: Boolean): TreeModel {
+        myShowFiles = true
         if (cycleFiles != null && !cycleFiles.isEmpty()) {
-            myRoot.add(mCycleDependenciesNode);
+            myRoot.add(mCycleDependenciesNode)
         }
-        Runnable buildingRunnable = () -> {
-            for (final VirtualFile file : forwardFiles) {
-                if (file != null) {
-                    ReadAction.run(() -> buildFileNode(file, null, DependencyType.FORWARD));
-                }
+        val buildingRunnable = Runnable {
+            for (file in forwardFiles) {
+                ReadAction.run<RuntimeException> { buildFileNode(file, DependencyType.FORWARD) }
             }
-            for (final VirtualFile file : backwardFiles) {
-                if (file != null) {
-                    ReadAction.run(() -> buildFileNode(file, null, DependencyType.BACKWARD));
-                }
+            for (file in backwardFiles) {
+                ReadAction.run<RuntimeException> { buildFileNode(file, DependencyType.BACKWARD) }
             }
-            for (final VirtualFile file : cycleFiles) {
-                if (file != null) {
-                    ReadAction.run(() -> buildFileNode(file, null, DependencyType.CYCLE));
-                }
+            for (file in cycleFiles!!) {
+                ReadAction.run<RuntimeException> { buildFileNode(file, DependencyType.CYCLE) }
             }
-        };
-
+        }
         if (showProgress) {
             ProgressManager.getInstance().runProcessWithProgressSynchronously(buildingRunnable, CodeInsightBundle
-                    .message("package.dependencies.build.process.title"), false, myProject);
+                    .message("package.dependencies.build.process.title"), false, myProject)
         } else {
-            buildingRunnable.run();
+            buildingRunnable.run()
         }
-
-        TreeUtil.sortRecursively(mForwardDependenciesNode, new DependencyNodeComparator());
-        return new TreeModel(myRoot, myTotalFileCount, myMarkedFileCount);
+        TreeUtil.sortRecursively(mForwardDependenciesNode, DependencyNodeComparator())
+        return TreeModel(myRoot, myTotalFileCount, myMarkedFileCount)
     }
 
-    private PackageDependenciesNode buildFileNode(VirtualFile file, PackageDependenciesNode lastParent, DependencyType dependencyType) {
-        ProgressIndicator indicator = ProgressManager.getInstance().getProgressIndicator();
-        if (file == null || !file.isValid()) return null;
+    private fun buildFileNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode? {
+        val indicator = ProgressManager.getInstance().progressIndicator
+        if (file == null || !file.isValid) return null
         if (indicator != null) {
-            update(indicator, false, ((double) myScannedFileCount++) / myTotalFileCount);
+            update(indicator, false, myScannedFileCount++.toDouble() / myTotalFileCount)
         }
-
-
-        boolean isMarked = myMarker != null && myMarker.isMarked(file);
-        if (isMarked) myMarkedFileCount++;
+        val isMarked = myMarker != null && myMarker.isMarked(file)
+        if (isMarked) myMarkedFileCount++
         if (isMarked || myAddUnmarkedFiles) {
-            PackageDependenciesNode dirNode = !myCompactEmptyMiddlePackages && lastParent != null ? lastParent : getFileParentNode(file, dependencyType);
-
+            val dirNode = getFileParentNode(file, dependencyType)
             if (myShowFiles) {
-                FileNode fileNode = new FileNode(file, myProject, isMarked);
-                dirNode.add(fileNode);
+                val fileNode = FileNode(file, myProject, isMarked)
+                dirNode.add(fileNode)
             } else {
-                dirNode.addFile(file, isMarked);
+                dirNode.addFile(file, isMarked)
             }
-            return dirNode;
+            return dirNode
         }
-        return null;
+        return null
     }
 
-    public @NotNull PackageDependenciesNode getFileParentNode(VirtualFile file, DependencyType dependencyType) {
-        LOG.assertTrue(file != null);
-        final VirtualFile containingDirectory = file.getParent();
-        return getModuleDirNode(containingDirectory, myFileIndex.getModuleForFile(file), null, dependencyType);
+    fun getFileParentNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode {
+        LOG.assertTrue(file != null)
+        val containingDirectory = file!!.parent
+        return getModuleDirNode(containingDirectory, myFileIndex.getModuleForFile(file), null, dependencyType)!!
     }
 
-    public static PackageDependenciesNode @Nullable [] findNodeForPsiElement(PackageDependenciesNode parent, PsiElement element) {
-        final Set<PackageDependenciesNode> result = new HashSet<>();
-        for (int i = 0; i < parent.getChildCount(); i++) {
-            final TreeNode treeNode = parent.getChildAt(i);
-            if (treeNode instanceof PackageDependenciesNode) {
-                final PackageDependenciesNode node = (PackageDependenciesNode) treeNode;
-                if (element instanceof PsiDirectory && node.getPsiElement() == element) {
-                    return new PackageDependenciesNode[]{node};
-                }
-                if (element instanceof PsiFile) {
-                    PsiFile psiFile = null;
-                    if (node instanceof BasePsiNode) {
-                        psiFile = ((BasePsiNode) node).getContainingFile();
-                    } else if (node instanceof FileNode) { //non java files
-                        psiFile = ((PsiFile) node.getPsiElement());
-                    }
-                    if (psiFile != null && Comparing.equal(psiFile.getVirtualFile(), ((PsiFile) element).getVirtualFile())) {
-                        result.add(node);
-                    }
-                }
-            }
-        }
-        return result.isEmpty() ? null : result.toArray(new PackageDependenciesNode[0]);
-    }
-
-    private PackageDependenciesNode getModuleDirNode(VirtualFile virtualFile, Module module, DirectoryNode childNode, DependencyType dependencyType) {
+    private fun getModuleDirNode(virtualFile: VirtualFile?, module: Module?, childNode: DirectoryNode?, dependencyType: DependencyType): PackageDependenciesNode? {
         if (virtualFile == null) {
-            return getModuleNode(module, dependencyType);
+            return getModuleNode(module, dependencyType)
         }
-
-        PackageDependenciesNode directoryNode = myModuleDirNodes.get(dependencyType).get(virtualFile);
+        var directoryNode: PackageDependenciesNode? = myModuleDirNodes[dependencyType]!![virtualFile]
         if (directoryNode != null) {
             if (myCompactEmptyMiddlePackages) {
-                final DirectoryNode nestedNode = ((DirectoryNode) directoryNode).getCompactedDirNode();
+                val nestedNode = (directoryNode as DirectoryNode).compactedDirNode
                 if (nestedNode != null) { //decompact
-                    boolean expand = false;
+                    var expand = false
                     if (myTree != null) {
-                        expand = !myTree.isCollapsed(new TreePath(directoryNode.getPath()));
+                        expand = !myTree!!.isCollapsed(TreePath(directoryNode.getPath()))
                     }
-                    DirectoryNode parentWrapper = nestedNode.getWrapper();
-                    while (parentWrapper.getWrapper() != null) {
-                        parentWrapper = parentWrapper.getWrapper();
+                    var parentWrapper = nestedNode.wrapper
+                    while (parentWrapper.wrapper != null) {
+                        parentWrapper = parentWrapper.wrapper
                     }
-                    for (int i = parentWrapper.getChildCount() - 1; i >= 0; i--) {
-                        nestedNode.add((MutableTreeNode) parentWrapper.getChildAt(i));
+                    for (i in parentWrapper.childCount - 1 downTo 0) {
+                        nestedNode.add(parentWrapper.getChildAt(i) as MutableTreeNode)
                     }
-                    ((DirectoryNode) directoryNode).setCompactedDirNode(null);
-                    parentWrapper.add(nestedNode);
-                    nestedNode.removeUpReference();
+                    directoryNode.setCompactedDirNode(null)
+                    parentWrapper.add(nestedNode)
+                    nestedNode.removeUpReference()
                     if (myTree != null && expand) {
-                        final Runnable expandRunnable = () -> myTree.expandPath(new TreePath(nestedNode.getPath()));
-                        SwingUtilities.invokeLater(expandRunnable);
+                        val expandRunnable = Runnable { myTree!!.expandPath(TreePath(nestedNode.path)) }
+                        SwingUtilities.invokeLater(expandRunnable)
                     }
-                    return parentWrapper;
+                    return parentWrapper
                 }
                 if (directoryNode.getParent() == null) {    //find first node in tree
-                    DirectoryNode parentWrapper = ((DirectoryNode) directoryNode).getWrapper();
+                    var parentWrapper = directoryNode.wrapper
                     if (parentWrapper != null) {
-                        while (parentWrapper.getWrapper() != null) {
-                            parentWrapper = parentWrapper.getWrapper();
+                        while (parentWrapper!!.wrapper != null) {
+                            parentWrapper = parentWrapper.wrapper
                         }
-                        return parentWrapper;
+                        return parentWrapper
                     }
                 }
             }
-            return directoryNode;
+            return directoryNode
         }
-
-        final ProjectFileIndex fileIndex = ProjectRootManager.getInstance(myProject).getFileIndex();
-        final VirtualFile sourceRoot = fileIndex.getSourceRootForFile(virtualFile);
-        final VirtualFile contentRoot = fileIndex.getContentRootForFile(virtualFile);
-
-        directoryNode = new DirectoryNode(virtualFile, myProject, myCompactEmptyMiddlePackages, myFlattenPackages, myBaseDir,
-                myContentRoots);
-        myModuleDirNodes.get(dependencyType).put(virtualFile, (DirectoryNode) directoryNode);
-
-        final VirtualFile directory = virtualFile.getParent();
+        val fileIndex = ProjectRootManager.getInstance(myProject).fileIndex
+        val sourceRoot = fileIndex.getSourceRootForFile(virtualFile)
+        val contentRoot = fileIndex.getContentRootForFile(virtualFile)
+        directoryNode = DirectoryNode(virtualFile, myProject, myCompactEmptyMiddlePackages, myFlattenPackages, myBaseDir,
+                myContentRoots)
+        myModuleDirNodes[dependencyType]!![virtualFile] = directoryNode
+        val directory = virtualFile.parent
         if (!myFlattenPackages && directory != null) {
-            if (myCompactEmptyMiddlePackages && !Comparing.equal(sourceRoot, virtualFile) && !Comparing.equal(contentRoot, virtualFile)) {//compact
-                ((DirectoryNode) directoryNode).setCompactedDirNode(childNode);
+            if (myCompactEmptyMiddlePackages && !Comparing.equal(sourceRoot, virtualFile) && !Comparing.equal(contentRoot, virtualFile)) { //compact
+                directoryNode.setCompactedDirNode(childNode)
             }
-            if (fileIndex.getModuleForFile(directory) == module) {
-                DirectoryNode parentDirectoryNode = myModuleDirNodes.get(dependencyType).get(directory);
-                if (parentDirectoryNode != null
-                        || !myCompactEmptyMiddlePackages
-                        || (sourceRoot != null && VfsUtilCore.isAncestor(directory, sourceRoot, false) && fileIndex.getSourceRootForFile(directory) != null)
+            if (fileIndex.getModuleForFile(directory) === module) {
+                val parentDirectoryNode = myModuleDirNodes[dependencyType]!![directory]
+                if (parentDirectoryNode != null || !myCompactEmptyMiddlePackages || sourceRoot != null && VfsUtilCore.isAncestor(directory, sourceRoot, false) && fileIndex.getSourceRootForFile(directory) != null
                         || Comparing.equal(directory, contentRoot)) {
-                    getModuleDirNode(directory, module, (DirectoryNode) directoryNode, dependencyType).add(directoryNode);
+                    getModuleDirNode(directory, module, directoryNode as DirectoryNode?, dependencyType)!!.add(directoryNode)
                 } else {
-                    directoryNode = getModuleDirNode(directory, module, (DirectoryNode) directoryNode, dependencyType);
+                    directoryNode = getModuleDirNode(directory, module, directoryNode as DirectoryNode?, dependencyType)
                 }
             } else {
-                getModuleNode(module, dependencyType).add(directoryNode);
+                getModuleNode(module, dependencyType)!!.add(directoryNode)
             }
         } else {
-            if (Comparing.equal(contentRoot, virtualFile)) {
-                getModuleNode(module, dependencyType).add(directoryNode);
+            if (Comparing.equal<VirtualFile>(contentRoot, virtualFile)) {
+                getModuleNode(module, dependencyType)!!.add(directoryNode)
             } else {
-                final VirtualFile root;
-                if (!Comparing.equal(sourceRoot, virtualFile) && sourceRoot != null) {
-                    root = sourceRoot;
-                } else root = contentRoot;
+                val root: VirtualFile? = if (!Comparing.equal(sourceRoot, virtualFile) && sourceRoot != null) {
+                    sourceRoot
+                } else contentRoot
                 if (root != null) {
-                    getModuleDirNode(root, module, null, dependencyType).add(directoryNode);
+                    getModuleDirNode(root, module, null, dependencyType)!!.add(directoryNode)
                 } else {
                     if (myExternalNode == null) {
-                        myExternalNode = new GeneralGroupNode("External Dependencies", AllIcons.Nodes.PpLibFolder, myProject);
-                        myRoot.add(myExternalNode);
+                        myExternalNode = GeneralGroupNode("External Dependencies", AllIcons.Nodes.PpLibFolder, myProject)
+                        myRoot.add(myExternalNode)
                     }
+                    myExternalNode!!.add(directoryNode)
+                }
+            }
+        }
+        return directoryNode
+    }
 
-                    myExternalNode.add(directoryNode);
+    private fun getModuleNode(module: Module?, dependencyType: DependencyType): PackageDependenciesNode? {
+        val mainNode = getMainNode(dependencyType)
+        if (module == null || !myShowModules) {
+            return mainNode
+        }
+        var node = myModuleNodes[dependencyType]!![module]
+        if (node != null) return node
+        node = ModuleNode(module, if (myShowModuleGroups) myGrouper else null)
+        val groupPath = myGrouper.getGroupPath(module)
+        if (groupPath.isEmpty()) {
+            myModuleNodes[dependencyType]!![module] = node
+            mainNode!!.add(node)
+            return node
+        }
+        myModuleNodes[dependencyType]!![module] = node
+        if (myShowModuleGroups) {
+            getParentModuleGroup(groupPath, dependencyType).add(node)
+        } else {
+            mainNode!!.add(node)
+        }
+        return node
+    }
+
+    private fun getMainNode(dependencyType: DependencyType): GeneralGroupNode? {
+        return if (dependencyType === DependencyType.FORWARD) {
+            mForwardDependenciesNode
+        } else if (dependencyType === DependencyType.BACKWARD) {
+            mBackwardDependenciesNode
+        } else if (dependencyType === DependencyType.CYCLE) {
+            mCycleDependenciesNode
+        } else {
+            myExternalNode
+        }
+    }
+
+    private fun getParentModuleGroup(groupPath: List<String>, dependencyType: DependencyType): PackageDependenciesNode {
+        val key = StringUtil.join(groupPath, "")
+        var groupNode = myModuleGroupNodes[dependencyType]!![key]
+        if (groupNode == null) {
+            groupNode = ModuleGroupNode(ModuleGroup(groupPath), myProject)
+            myModuleGroupNodes[dependencyType]!![key] = groupNode
+            getMainNode(dependencyType)!!.add(groupNode)
+        }
+        if (groupPath.size > 1) {
+            val node = getParentModuleGroup(groupPath.subList(0, groupPath.size - 1), dependencyType)
+            node.add(groupNode)
+        }
+        return groupNode
+    }
+
+    companion object {
+        private val LOG = Logger.getInstance(MyFileTreeModelBuilder::class.java)
+        val FILE_COUNT = Key.create<Int>("FILE_COUNT")
+        @Synchronized
+        fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, marker: Marker?, settings: DependencyPanelSettings): TreeModel {
+            return MyFileTreeModelBuilder(project, marker, settings).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
+        }
+
+        fun clearCaches(project: Project) {
+            project.putUserData(FILE_COUNT, null)
+        }
+
+        private fun update(indicator: ProgressIndicator, indeterminate: Boolean, fraction: Double) {
+            if (indicator is PanelProgressIndicator) {
+                val scanningPackagesMessage = CodeInsightBundle.message("package.dependencies.build.progress.text")
+                indicator.update(scanningPackagesMessage, indeterminate, fraction)
+            } else {
+                if (fraction != -1.0) {
+                    indicator.fraction = fraction
                 }
             }
         }
 
-        return directoryNode;
-    }
-
-
-    @Nullable
-    private PackageDependenciesNode getModuleNode(Module module, DependencyType dependencyType) {
-        GeneralGroupNode mainNode = getMainNode(dependencyType);
-        if (module == null || !myShowModules) {
-            return mainNode;
+        fun findNodeForPsiElement(parent: PackageDependenciesNode, element: PsiElement): Array<PackageDependenciesNode>? {
+            val result: MutableSet<PackageDependenciesNode> = HashSet()
+            for (i in 0 until parent.childCount) {
+                val treeNode = parent.getChildAt(i)
+                if (treeNode is PackageDependenciesNode) {
+                    val node = treeNode
+                    if (element is PsiDirectory && node.psiElement === element) {
+                        return arrayOf(node)
+                    }
+                    if (element is PsiFile) {
+                        var psiFile: PsiFile? = null
+                        if (node is BasePsiNode<*>) {
+                            psiFile = node.containingFile
+                        } else if (node is FileNode) { //non java files
+                            psiFile = node.getPsiElement() as PsiFile?
+                        }
+                        if (psiFile != null && Comparing.equal<VirtualFile>(psiFile.virtualFile, element.virtualFile)) {
+                            result.add(node)
+                        }
+                    }
+                }
+            }
+            return if (result.isEmpty()) null else result.toTypedArray<PackageDependenciesNode>()
         }
-        ModuleNode node = myModuleNodes.get(dependencyType).get(module);
-        if (node != null) return node;
-        node = new ModuleNode(module, myShowModuleGroups ? myGrouper : null);
-        final List<String> groupPath = myGrouper.getGroupPath(module);
-        if (groupPath.isEmpty()) {
-            myModuleNodes.get(dependencyType).put(module, node);
-            mainNode.add(node);
-            return node;
-        }
-        myModuleNodes.get(dependencyType).put(module, node);
-        if (myShowModuleGroups) {
-            getParentModuleGroup(groupPath, dependencyType).add(node);
-        } else {
-            mainNode.add(node);
-        }
-        return node;
-    }
-
-    private GeneralGroupNode getMainNode(DependencyType dependencyType) {
-        if (dependencyType == DependencyType.FORWARD) {
-            return mForwardDependenciesNode;
-        } else if (dependencyType == DependencyType.BACKWARD) {
-            return mBackwardDependenciesNode;
-        } else if (dependencyType == DependencyType.CYCLE) {
-            return mCycleDependenciesNode;
-        } else {
-            return myExternalNode;
-        }
-    }
-
-    private PackageDependenciesNode getParentModuleGroup(List<String> groupPath, DependencyType dependencyType) {
-        final String key = StringUtil.join(groupPath, "");
-        ModuleGroupNode groupNode = myModuleGroupNodes.get(dependencyType).get(key);
-        if (groupNode == null) {
-            groupNode = new ModuleGroupNode(new ModuleGroup(groupPath), myProject);
-            myModuleGroupNodes.get(dependencyType).put(key, groupNode);
-            getMainNode(dependencyType).add(groupNode);
-        }
-        if (groupPath.size() > 1) {
-            final PackageDependenciesNode node = getParentModuleGroup(groupPath.subList(0, groupPath.size() - 1), dependencyType);
-            node.add(groupNode);
-        }
-        return groupNode;
-    }
-
-    public static @NlsContexts.ProgressText String getScanningPackagesMessage() {
-        return CodeInsightBundle.message("package.dependencies.build.progress.text");
     }
 }

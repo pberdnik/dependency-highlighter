@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.icons.AllIcons
@@ -8,20 +8,23 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.ui.DependenciesPanel
 
-class GroupByScopeTypeAction(
+
+class FilterLegalsAction(
         private val mySettings: DependenciesPanel.DependencyPanelSettings,
         private val rebuild: () -> Unit,
-) : ToggleAction(CodeInsightBundle.messagePointer("action.group.by.scope.type"),
-        CodeInsightBundle.messagePointer("action.group.by.scope.type.description"), AllIcons.Actions.GroupByTestProduction) {
+        private val setEmptyText: (Boolean) -> Unit,
+) : ToggleAction(CodeInsightBundle.messagePointer("action.show.illegals.only"),
+        CodeInsightBundle.messagePointer("action.show.illegals.only.description"), AllIcons.General.Filter) {
     override fun isSelected(event: AnActionEvent): Boolean {
-        return mySettings.UI_GROUP_BY_SCOPE_TYPE
+        return mySettings.UI_FILTER_LEGALS
     }
 
     override fun setSelected(event: AnActionEvent, flag: Boolean) {
-        DependencyUISettings.getInstance().UI_GROUP_BY_SCOPE_TYPE = flag
-        mySettings.UI_GROUP_BY_SCOPE_TYPE = flag
+        DependencyUISettings.getInstance().UI_FILTER_LEGALS = flag
+        mySettings.UI_FILTER_LEGALS = flag
+        setEmptyText(flag)
         rebuild()
     }
 
-    override fun getActionUpdateThread() = ActionUpdateThread.BGT
+    override fun getActionUpdateThread() = ActionUpdateThread.EDT
 }

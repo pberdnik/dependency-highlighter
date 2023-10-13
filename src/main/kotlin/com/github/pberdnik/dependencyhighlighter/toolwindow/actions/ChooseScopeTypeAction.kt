@@ -1,4 +1,4 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction

@@ -1,6 +1,6 @@
-package com.github.pberdnik.dependencyhighlighter.panel.actions
+package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
-import com.github.pberdnik.dependencyhighlighter.panel.MyTree
+import com.github.pberdnik.dependencyhighlighter.toolwindow.MyTree
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction

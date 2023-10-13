@@ -1,4 +1,4 @@
-package com.intellij.packageDependencies.ui
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 enum class DependencyType {
     FORWARD,

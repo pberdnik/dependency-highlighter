@@ -1,24 +1,21 @@
-package com.intellij.packageDependencies.actions
+package com.github.pberdnik.dependencyhighlighter.actions
 
-import com.github.pberdnik.dependencyhighlighter.MyBundle
-import com.github.pberdnik.dependencyhighlighter.panel.FileAnalyzeDependenciesHandler
-import com.intellij.analysis.*
+import com.github.pberdnik.dependencyhighlighter.icons.SdkIcons
+import com.github.pberdnik.dependencyhighlighter.toolwindow.FileAnalyzeDependenciesHandler
+import com.intellij.analysis.AnalysisActionUtils
+import com.intellij.analysis.AnalysisScope
+import com.intellij.analysis.AnalysisUIOptions
+import com.intellij.analysis.BaseAnalysisActionDialog
 import com.intellij.analysis.dialog.ModelScopeItem
-import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.codeInspection.ui.InspectionResultsView
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.NlsContexts
-import com.intellij.openapi.util.NlsSafe
-import icons.SdkIcons
-import javax.swing.JComponent
 
 class MyAnalyzeDependenciesAction : AnAction("Run Analysis", "Run analysis", SdkIcons.analyze) {
-    fun analyze(project: Project, scope: AnalysisScope) {
+    private fun analyze(project: Project, scope: AnalysisScope) {
         FileAnalyzeDependenciesHandler(project, listOf(scope), 0).analyze()
     }
 

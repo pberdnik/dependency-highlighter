@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.pberdnik.dependencyhighlighter.panel
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-import com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindow
+import com.github.pberdnik.dependencyhighlighter.actions.MyForwardDependenciesBuilder
 import com.intellij.analysis.AnalysisScope
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.ide.projectView.ProjectView
@@ -26,8 +26,6 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
-import com.intellij.packageDependencies.MyDependenciesBuilder
-import com.intellij.packageDependencies.actions.MyForwardDependenciesBuilder
 import com.intellij.psi.PsiFile
 import com.intellij.ui.content.ContentFactory
 import javax.swing.SwingUtilities
@@ -65,7 +63,6 @@ class FileAnalyzeDependenciesHandler(
             for (builder in builders) {
                 myDependencies.putAll(builder.dependencies)
             }
-//            performAction(myDependencies, project)
         } catch (e: IndexNotReadyException) {
             DumbService.getInstance(project).showDumbModeNotification(
                     CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))

@@ -1,10 +1,9 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-package com.github.pberdnik.dependencyhighlighter.panel
+package com.github.pberdnik.dependencyhighlighter.toolwindow
 
+import com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
-import com.github.pberdnik.dependencyhighlighter.panel.actions.AddToScopeAction
-import com.github.pberdnik.dependencyhighlighter.panel.actions.FlattenPackagesAction
-import com.github.pberdnik.dependencyhighlighter.panel.actions.ShowDetailedInformationAction
+import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
 import com.intellij.ide.impl.FlattenModulesToggleAction
@@ -20,8 +19,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.DependencyUISettings
-import com.intellij.packageDependencies.MyDependenciesBuilder
-import com.intellij.packageDependencies.actions.MyAnalyzeDependenciesAction
 import com.intellij.packageDependencies.ui.*
 import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
 import com.intellij.psi.PsiFile
@@ -42,8 +39,8 @@ import javax.swing.tree.TreePath
 
 class FileDependenciesPanel(
         private val project: Project,
-        private val myBuilders: MutableList<MyDependenciesBuilder>,
-        private val myExcluded: MutableSet<PsiFile>
+        myBuilders: MutableList<MyDependenciesBuilder>,
+        myExcluded: MutableSet<PsiFile>
 ) : JPanel(BorderLayout()), Disposable, DataProvider {
     private val myDependencies: MutableMap<PsiFile, Set<PsiFile>>
     private val myBackwardDependencies: MutableMap<PsiFile, MutableSet<PsiFile>>
@@ -67,7 +64,6 @@ class FileDependenciesPanel(
         myIllegalDependencies = HashMap()
         for (builder in myBuilders) {
             myDependencies.putAll(builder.dependencies)
-            putAllDependencies(builder)
         }
         buildBackwardFromForwardDependencies()
         exclude(myExcluded)
@@ -105,13 +101,6 @@ class FileDependenciesPanel(
         }
     }
 
-    private fun putAllDependencies(builder: MyDependenciesBuilder) {
-        val dependencies = builder.getIllegalDependencies()
-        for ((key, value) in dependencies) {
-            myIllegalDependencies[key.virtualFile] = value
-        }
-    }
-
     private fun exclude(excluded: Set<PsiFile>) {
         for (psiFile in excluded) {
             myDependencies.remove(psiFile)
@@ -146,9 +135,6 @@ class FileDependenciesPanel(
 
     private fun rebuild() {
         myIllegalDependencies = HashMap()
-        for (builder in myBuilders) {
-            putAllDependencies(builder)
-        }
         updateRightTreeModel()
     }
 
@@ -213,8 +199,6 @@ class FileDependenciesPanel(
         group.add(actionManager.getAction(IdeActions.ACTION_EDIT_SOURCE))
         group.add(actionManager.getAction(IdeActions.GROUP_VERSION_CONTROLS))
         group.add(actionManager.getAction(IdeActions.GROUP_ANALYZE))
-        group.add(AddToScopeAction(project, mySettings, ::rebuild, myLeftTree, myRightTree, myTransitiveBorder, myBuilders, myDependencies, myExcluded, ::putAllDependencies, ::exclude))
-        group.add(ShowDetailedInformationAction(mySettings, myLeftTree, myRightTree, myTransitiveBorder, myBuilders))
         return group
     }
 
