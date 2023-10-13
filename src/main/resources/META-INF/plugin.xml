@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.pberdnik.dependencyhighlighter</id>
-    <name>dependency-highlighter Template</name>
+    <name>Dependency Highlighter</name>
     <vendor>pberdnik</vendor>
 
     <depends>com.intellij.modules.platform</depends>
@@ -9,10 +9,21 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.pberdnik.dependencyhighlighter.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow id="Analyse Dependencies" secondary="true" icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.analysis" anchor="right"
+                    factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
+        <projectViewNodeDecorator
+                implementation="com.github.pberdnik.dependencyhighlighter.fileui.DependenciesProjectViewNodeDecorator"/>
+        <editorTabColorProvider
+                implementation="com.github.pberdnik.dependencyhighlighter.fileui.ProjectPanelColorProvider" />
     </extensions>
 
-    <applicationListeners>
-        <listener class="com.github.pberdnik.dependencyhighlighter.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
-    </applicationListeners>
+    <actions>
+        <action id="com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction"
+                class="com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction"
+                text="Extended Analyze Dependencies" description="Extended analyze dependencies"
+                icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.dependencies">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <override-text place="MainMenu" text="Extended Analyze Dependencies"/>
+        </action>
+    </actions>
 </idea-plugin>
