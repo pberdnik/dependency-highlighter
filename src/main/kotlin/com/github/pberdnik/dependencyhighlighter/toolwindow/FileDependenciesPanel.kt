@@ -116,7 +116,6 @@ class FileDependenciesPanel(
         mySettings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
             mySettings.UI_SHOW_MODULES = true
-            group.add(createFlattenModulesAction())
             if (ModuleManager.getInstance(project).hasModuleGroups()) {
                 mySettings.UI_SHOW_MODULE_GROUPS = true
             }
@@ -124,14 +123,6 @@ class FileDependenciesPanel(
         val toolbar = ActionManager.getInstance().createActionToolbar("PackageDependencies", group, true)
         toolbar.targetComponent = this
         return toolbar.component
-    }
-
-    private fun createFlattenModulesAction(): FlattenModulesToggleAction {
-        return FlattenModulesToggleAction(project, { mySettings.UI_SHOW_MODULES }, { !mySettings.UI_SHOW_MODULE_GROUPS }) { value: Boolean? ->
-            DependencyUISettings.getInstance().UI_SHOW_MODULE_GROUPS = !value!!
-            mySettings.UI_SHOW_MODULE_GROUPS = !value
-            rebuild()
-        }
     }
 
     private fun rebuild() {
@@ -147,7 +138,6 @@ class FileDependenciesPanel(
         SmartExpander.installOn(tree)
         EditSourceOnDoubleClickHandler.install(tree)
         TreeSpeedSearch(tree)
-        PopupHandler.installPopupMenu(tree, createTreePopupActions(), "DependenciesPopup")
     }
 
     private fun updateRightTreeModel() {
@@ -192,15 +182,6 @@ class FileDependenciesPanel(
         myRightTreeExpansionMonitor.restore()
         expandFirstLevel(myRightTree)
         UIUtils.updateUI(project)
-    }
-
-    private fun createTreePopupActions(): ActionGroup {
-        val group = DefaultActionGroup()
-        val actionManager = ActionManager.getInstance()
-        group.add(actionManager.getAction(IdeActions.ACTION_EDIT_SOURCE))
-        group.add(actionManager.getAction(IdeActions.GROUP_VERSION_CONTROLS))
-        group.add(actionManager.getAction(IdeActions.GROUP_ANALYZE))
-        return group
     }
 
     private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, marker: Marker): TreeModel {
