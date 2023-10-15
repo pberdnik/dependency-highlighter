@@ -1,4 +1,3 @@
-// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction
@@ -6,7 +5,6 @@ import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateServic
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
-import com.intellij.ide.impl.FlattenModulesToggleAction
 import com.intellij.lang.LangBundle
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
@@ -18,12 +16,10 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.packageDependencies.DependencyRule
-import com.intellij.packageDependencies.DependencyUISettings
 import com.intellij.packageDependencies.ui.*
 import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SmartExpander
 import com.intellij.ui.TreeSpeedSearch
