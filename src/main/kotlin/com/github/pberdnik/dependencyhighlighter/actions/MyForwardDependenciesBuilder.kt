@@ -74,13 +74,21 @@ class MyForwardDependenciesBuilder(project: Project, scope: AnalysisScope, trans
                         val dependencyFile = dependency.containingFile
                         if (dependencyFile != null) {
                             if (viewProvider === dependencyFile.viewProvider) return@analyzeFileDependencies
-                            if (dependencyFile.isPhysical || isJavaHasKotlin(psiFile, dependencyFile)) {
-                                val depFile = dependencyFile.virtualFile
-                                if (depFile != null && (fileIndex.isInContent(depFile) || fileIndex.isInLibrary(depFile))
-                                        && (myTargetScope == null || myTargetScope.contains(depFile))) {
-                                    val navigationElement = dependencyFile.navigationElement
-                                    found.add(if (navigationElement is PsiFile) navigationElement else dependencyFile)
-                                }
+//                            if (!dependencyFile.isPhysical) {
+//                                thisLogger().warn("NOT PHYSICAL: \n|    " +
+//                                        "file = $psiFile \n|    " +
+//                                        "dependencyFile = $dependencyFile \n|    " +
+//                                        "virtualFile = ${dependencyFile.virtualFile} \n |    " +
+//                                        "path = ${dependencyFile.virtualFile?.path}")
+//                                if (dependencyFile.virtualFile?.path.isNullOrEmpty()) {
+//                                    thisLogger().warn("====================EMPTY====================")
+//                                }
+//                            }
+                            val depFile = dependencyFile.virtualFile
+                            if (depFile != null && (fileIndex.isInContent(depFile) || fileIndex.isInLibrary(depFile))
+                                    && (myTargetScope == null || myTargetScope.contains(depFile))) {
+                                val navigationElement = dependencyFile.navigationElement
+                                found.add(if (navigationElement is PsiFile) navigationElement else dependencyFile)
                             }
                         }
                     }
@@ -93,14 +101,6 @@ class MyForwardDependenciesBuilder(project: Project, scope: AnalysisScope, trans
             }
             collectedDeps.removeAll(processed)
         } while (isTransitive && collectedDeps.isNotEmpty())
-    }
-
-    /**
-     * For some reason during analysis Java class, dependencyFile.isPhysical() for Kotlin class returns false
-     * and hence dependency is wrongly skipped. This check prevents such scenario
-     */
-    private fun isJavaHasKotlin(psiFile: PsiFile, dependencyFile: PsiFile): Boolean {
-        return "java" == psiFile.fileType.defaultExtension && "kt" == dependencyFile.fileType.defaultExtension
     }
 
     private val isTransitive: Boolean
