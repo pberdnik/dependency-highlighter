@@ -1,8 +1,10 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
+import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
+import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
 import com.intellij.lang.LangBundle
@@ -51,6 +53,8 @@ class FileDependenciesPanel(
     private val myScopeOfInterest: AnalysisScope?
     private val myTransitiveBorder: Int
     private var mSelectedPsiFile: PsiFile? = null
+    private var inFileHighlighter: InFileHighlighter? = null
+    private val highlighter = EditorPsiElementHighlighter(project)
 
     init {
         myScopeOfInterest = null
@@ -72,12 +76,20 @@ class FileDependenciesPanel(
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
             override fun fileOpened(manager: FileEditorManager, file: VirtualFile) {
                 mSelectedPsiFile = PsiManager.getInstance(project).findFile(file)
+                mSelectedPsiFile?.let { selectedFile ->
+                    inFileHighlighter = InFileHighlighter(project, selectedFile)
+                    inFileHighlighter?.analyze()
+                }
                 updateRightTreeModel()
             }
 
             override fun selectionChanged(event: FileEditorManagerEvent) {
                 val newFile = event.newFile ?: return
                 mSelectedPsiFile = PsiManager.getInstance(project).findFile(newFile)
+                mSelectedPsiFile?.let { selectedFile ->
+                    inFileHighlighter = InFileHighlighter(project, selectedFile)
+                    inFileHighlighter?.analyze()
+                }
                 updateRightTreeModel()
             }
         })
@@ -175,6 +187,21 @@ class FileDependenciesPanel(
         project.service<ProjectViewUiStateService>().setDeps(forwardDeps, backwardDeps, cycleDeps)
         myRightTreeExpansionMonitor.freeze()
         myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, myRightTreeMarker))
+        myRightTree.addTreeSelectionListener {
+            highlighter.removeHighlight()
+            val lastSelectedPathComponent = myRightTree.lastSelectedPathComponent
+            if (lastSelectedPathComponent != null && lastSelectedPathComponent is FileNode) {
+                val psiElement = lastSelectedPathComponent.psiElement
+                if (psiElement is PsiFile) {
+                    val deps = inFileHighlighter?.deps
+                    deps?.forEach { dep ->
+                        if (dep.psiFile.virtualFile.path == psiElement.virtualFile.path) {
+                            highlighter.highlightElement(dep.psiElement)
+                        }
+                    }
+                }
+            }
+        }
         myRightTreeExpansionMonitor.restore()
         expandFirstLevel(myRightTree)
         UIUtils.updateUI(project)
