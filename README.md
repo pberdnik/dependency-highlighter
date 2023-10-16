@@ -7,13 +7,13 @@
 <!-- Plugin description -->
 
 This plugin helps you track file dependencies.
-To initiate the analysis, click on the <img src="https://pberdnik.github.io/res/analyze_button.svg" width="20"/> button.
+To initiate the analysis, click on the "Run analysis" button.
 When you open a file, the plugin displays all the files that use it and all the files it uses on the right panel.
 Files that depend on the current one are highlighted in purple, and files it depends on are highlighted in green
 in the project panel.
+<!-- Plugin description end -->
 
 <img src="https://pberdnik.github.io/res/example.png" alt="Screenshot of IDE with plugin"/>
-<!-- Plugin description end -->
 
 ## Installation
 
