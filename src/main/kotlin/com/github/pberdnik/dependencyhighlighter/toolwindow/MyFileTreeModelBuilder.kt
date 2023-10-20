@@ -10,7 +10,6 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Comparing
@@ -26,7 +25,12 @@ import javax.swing.SwingUtilities
 import javax.swing.tree.MutableTreeNode
 import javax.swing.tree.TreePath
 
-class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, settings: DependencyPanelSettings) {
+class MyFileTreeModelBuilder(
+    private val myProject: Project,
+    marker: Marker?,
+    settings: DependencyPanelSettings,
+    private val myBaseDir: VirtualFile,
+) {
     private val myFileIndex: ProjectFileIndex
     private val myShowModuleGroups: Boolean
     private val myFlattenPackages: Boolean
@@ -46,7 +50,6 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
     private var myTotalFileCount = 0
     private var myMarkedFileCount = 0
     private var myTree: JTree? = null
-    private val myBaseDir: VirtualFile = myProject.baseDir
     private var myContentRoots: Array<VirtualFile> = ProjectRootManager.getInstance(myProject).contentRoots
 
     init {
@@ -233,8 +236,8 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
         private val LOG = Logger.getInstance(MyFileTreeModelBuilder::class.java)
         private val FILE_COUNT = Key.create<Int>("FILE_COUNT")
         @Synchronized
-        fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, marker: Marker?, settings: DependencyPanelSettings): TreeModel {
-            return MyFileTreeModelBuilder(project, marker, settings).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
+        fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, marker: Marker?, settings: DependencyPanelSettings, baseDir: VirtualFile): TreeModel {
+            return MyFileTreeModelBuilder(project, marker, settings, baseDir).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
         }
 
         fun clearCaches(project: Project) {

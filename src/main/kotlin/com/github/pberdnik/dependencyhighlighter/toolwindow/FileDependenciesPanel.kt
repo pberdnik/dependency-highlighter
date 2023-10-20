@@ -3,6 +3,7 @@ package com.github.pberdnik.dependencyhighlighter.toolwindow
 import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
+import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.ChooseBaseDirAction
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
 import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
@@ -11,11 +12,14 @@ import com.intellij.lang.LangBundle
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.ui.*
@@ -84,13 +88,17 @@ class FileDependenciesPanel(
             }
 
             override fun selectionChanged(event: FileEditorManagerEvent) {
-                val newFile = event.newFile ?: return
-                mSelectedPsiFile = PsiManager.getInstance(project).findFile(newFile)
-                mSelectedPsiFile?.let { selectedFile ->
-                    inFileHighlighter = InFileHighlighter(project, selectedFile)
-                    inFileHighlighter?.analyze()
+                try {
+                    val newFile = event.newFile ?: return
+                    mSelectedPsiFile = PsiManager.getInstance(project).findFile(newFile)
+                    mSelectedPsiFile?.let { selectedFile ->
+                        inFileHighlighter = InFileHighlighter(project, selectedFile)
+                        inFileHighlighter?.analyze()
+                    }
+                    updateRightTreeModel()
+                } catch (e: Exception) {
+                    thisLogger().warn(e)
                 }
-                updateRightTreeModel()
             }
         })
         initTree(myRightTree)
@@ -121,6 +129,7 @@ class FileDependenciesPanel(
         val group = DefaultActionGroup()
         group.add(MyAnalyzeDependenciesAction())
         group.add(FlattenPackagesAction(mySettings, ::rebuild))
+        group.add(ChooseBaseDirAction(project, ::rebuild))
         mySettings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
             mySettings.UI_SHOW_MODULES = true
@@ -183,7 +192,17 @@ class FileDependenciesPanel(
         backwardDeps.removeAll(vScope)
         project.service<ProjectViewUiStateService>().setDeps(forwardDeps, backwardDeps, cycleDeps)
         myRightTreeExpansionMonitor.freeze()
-        myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, myRightTreeMarker))
+        val baseDirPath = project.service<PluginSetting>().baseDir
+        val baseDir = if (baseDirPath != null) {
+            LocalFileSystem.getInstance().findFileByPath(baseDirPath)
+        } else {
+            project.guessProjectDir()
+        }
+        if (baseDir == null) {
+            UIUtils.updateUI(project)
+            return
+        }
+        myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, myRightTreeMarker, baseDir))
         myRightTree.addTreeSelectionListener {
             highlighter.removeHighlight()
             val lastSelectedPathComponent = myRightTree.lastSelectedPathComponent
@@ -201,11 +220,10 @@ class FileDependenciesPanel(
         }
         myRightTreeExpansionMonitor.restore()
         expandFirstLevel(myRightTree)
-        UIUtils.updateUI(project)
     }
 
-    private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, marker: Marker): TreeModel {
-        return MyFileTreeModelBuilder.createTreeModel(project, false, forwardDeps, backwardDeps, cycleDeps, marker, mySettings)
+    private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, marker: Marker, baseDir: VirtualFile): TreeModel {
+        return MyFileTreeModelBuilder.createTreeModel(project, false, forwardDeps, backwardDeps, cycleDeps, marker, mySettings, baseDir)
     }
 
     fun setContent(content: Content?) {
