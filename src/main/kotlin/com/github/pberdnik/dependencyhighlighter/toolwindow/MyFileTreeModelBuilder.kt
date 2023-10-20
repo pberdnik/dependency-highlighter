@@ -2,7 +2,6 @@ package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.icons.AllIcons
-import com.intellij.ide.projectView.impl.ModuleGroup
 import com.intellij.ide.projectView.impl.nodes.ProjectViewDirectoryHelper
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.Logger
@@ -11,11 +10,11 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.Comparing
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.packageDependencies.ui.*
@@ -30,7 +29,6 @@ import javax.swing.tree.TreePath
 class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, settings: DependencyPanelSettings) {
     private val myFileIndex: ProjectFileIndex
     private val myShowModuleGroups: Boolean
-    private val myShowModules: Boolean
     private val myFlattenPackages: Boolean
     private val myCompactEmptyMiddlePackages: Boolean
     private var myShowFiles: Boolean
@@ -53,7 +51,6 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
 
     init {
         val multiModuleProject = ModuleManager.getInstance(myProject).modules.size > 1
-        myShowModules = settings.UI_SHOW_MODULES && multiModuleProject
         val directoryHelper = ProjectViewDirectoryHelper.getInstance(myProject)
         myFlattenPackages = directoryHelper.supportsFlattenPackages() && settings.UI_FLATTEN_PACKAGES
         myCompactEmptyMiddlePackages = directoryHelper.supportsHideEmptyMiddlePackages() && settings.UI_COMPACT_EMPTY_MIDDLE_PACKAGES
@@ -81,7 +78,7 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
 
     private fun build(forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, showProgress: Boolean): TreeModel {
         myShowFiles = true
-        if (cycleFiles != null && !cycleFiles.isEmpty()) {
+        if (!cycleFiles.isNullOrEmpty()) {
             myRoot.add(mCycleDependenciesNode)
         }
         val buildingRunnable = Runnable {
@@ -109,7 +106,7 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
         val indicator = ProgressManager.getInstance().progressIndicator
         if (file == null || !file.isValid) return null
         if (indicator != null) {
-            update(indicator, false, myScannedFileCount++.toDouble() / myTotalFileCount)
+            update(indicator,  myScannedFileCount++.toDouble() / myTotalFileCount)
         }
         val isMarked = myMarker != null && myMarker.isMarked(file)
         if (isMarked) myMarkedFileCount++
@@ -126,7 +123,7 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
         return null
     }
 
-    fun getFileParentNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode {
+    private fun getFileParentNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode {
         LOG.assertTrue(file != null)
         val containingDirectory = file!!.parent
         return getModuleDirNode(containingDirectory, myFileIndex.getModuleForFile(file), null, dependencyType)!!
@@ -140,7 +137,7 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
         if (directoryNode != null) {
             if (myCompactEmptyMiddlePackages) {
                 val nestedNode = (directoryNode as DirectoryNode).compactedDirNode
-                if (nestedNode != null) { //decompact
+                if (nestedNode != null) {
                     var expand = false
                     if (myTree != null) {
                         expand = !myTree!!.isCollapsed(TreePath(directoryNode.getPath()))
@@ -232,24 +229,9 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
         }
     }
 
-    private fun getParentModuleGroup(groupPath: List<String>, dependencyType: DependencyType): PackageDependenciesNode {
-        val key = StringUtil.join(groupPath, "")
-        var groupNode = myModuleGroupNodes[dependencyType]!![key]
-        if (groupNode == null) {
-            groupNode = ModuleGroupNode(ModuleGroup(groupPath), myProject)
-            myModuleGroupNodes[dependencyType]!![key] = groupNode
-            getMainNode(dependencyType)!!.add(groupNode)
-        }
-        if (groupPath.size > 1) {
-            val node = getParentModuleGroup(groupPath.subList(0, groupPath.size - 1), dependencyType)
-            node.add(groupNode)
-        }
-        return groupNode
-    }
-
     companion object {
         private val LOG = Logger.getInstance(MyFileTreeModelBuilder::class.java)
-        val FILE_COUNT = Key.create<Int>("FILE_COUNT")
+        private val FILE_COUNT = Key.create<Int>("FILE_COUNT")
         @Synchronized
         fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, marker: Marker?, settings: DependencyPanelSettings): TreeModel {
             return MyFileTreeModelBuilder(project, marker, settings).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
@@ -259,10 +241,10 @@ class MyFileTreeModelBuilder(private val myProject: Project, marker: Marker?, se
             project.putUserData(FILE_COUNT, null)
         }
 
-        private fun update(indicator: ProgressIndicator, indeterminate: Boolean, fraction: Double) {
+        private fun update(indicator: ProgressIndicator, fraction: Double) {
             if (indicator is PanelProgressIndicator) {
                 val scanningPackagesMessage = CodeInsightBundle.message("package.dependencies.build.progress.text")
-                indicator.update(scanningPackagesMessage, indeterminate, fraction)
+                indicator.update(scanningPackagesMessage, false, fraction)
             } else {
                 if (fraction != -1.0) {
                     indicator.fraction = fraction

@@ -124,9 +124,6 @@ class FileDependenciesPanel(
         mySettings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
             mySettings.UI_SHOW_MODULES = true
-            if (ModuleManager.getInstance(project).hasModuleGroups()) {
-                mySettings.UI_SHOW_MODULE_GROUPS = true
-            }
         }
         val toolbar = ActionManager.getInstance().createActionToolbar("PackageDependencies", group, true)
         toolbar.targetComponent = this
