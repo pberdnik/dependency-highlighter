@@ -44,10 +44,6 @@ class FileAnalyzeDependenciesHandler(
             for (builder in builders) {
                 builder.analyze()
             }
-            val myDependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
-            for (builder in builders) {
-                myDependencies.putAll(builder.dependencies)
-            }
         } catch (e: IndexNotReadyException) {
             DumbService.getInstance(project).showDumbModeNotification(
                     CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))

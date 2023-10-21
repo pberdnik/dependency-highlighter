@@ -8,6 +8,7 @@ import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPacka
 import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.analysis.AnalysisScope
+import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.lang.LangBundle
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
@@ -17,6 +18,9 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -96,8 +100,10 @@ class FileDependenciesPanel(
                         inFileHighlighter?.analyze()
                     }
                     updateRightTreeModel()
-                } catch (e: Exception) {
-                    thisLogger().warn(e)
+                } catch (e: IndexNotReadyException) {
+                    DumbService.getInstance(project).showDumbModeNotification(
+                        CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))
+                    throw ProcessCanceledException()
                 }
             }
         })
