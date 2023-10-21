@@ -9,12 +9,13 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Analyse Dependencies" secondary="true" icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.analysis" anchor="right"
+        <toolWindow id="Analyse Dependencies" secondary="true"
+                    icon="com.github.pberdnik.dependencyhighlighter.icons.SdkIcons.analysis" anchor="right"
                     factoryClass="com.github.pberdnik.dependencyhighlighter.toolwindow.FileDependenciesToolWindowFactory"/>
         <projectViewNodeDecorator
                 implementation="com.github.pberdnik.dependencyhighlighter.fileui.DependenciesProjectViewNodeDecorator"/>
         <editorTabColorProvider
-                implementation="com.github.pberdnik.dependencyhighlighter.fileui.ProjectPanelColorProvider" />
+                implementation="com.github.pberdnik.dependencyhighlighter.fileui.ProjectPanelColorProvider"/>
     </extensions>
 
     <actions>
@@ -26,4 +27,9 @@
             <override-text place="MainMenu" text="Extended Analyze Dependencies"/>
         </action>
     </actions>
+
+    <applicationListeners>
+        <listener class="com.github.pberdnik.dependencyhighlighter.SyncFilesChangeListener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </applicationListeners>
 </idea-plugin>
