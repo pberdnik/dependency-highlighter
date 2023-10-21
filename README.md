@@ -1,8 +1,8 @@
 # Dependency Highlighter
 
 ![Build](https://github.com/pberdnik/dependency-highlighter/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/22926-dependency-highlighter)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/22926-dependency-highlighter)
+[![Version](https://img.shields.io/jetbrains/plugin/v/22926-dependency-highlighter.svg)](https://plugins.jetbrains.com/plugin/22926-dependency-highlighter)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/22926-dependency-highlighter.svg)](https://plugins.jetbrains.com/plugin/22926-dependency-highlighter)
 
 <!-- Plugin description -->
 
