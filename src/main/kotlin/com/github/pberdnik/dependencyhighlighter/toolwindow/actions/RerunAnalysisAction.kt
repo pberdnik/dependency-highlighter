@@ -1,5 +1,6 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow.actions
 
+import com.github.pberdnik.dependencyhighlighter.icons.SdkIcons
 import com.github.pberdnik.dependencyhighlighter.toolwindow.DependenciesHandlerService
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.icons.AllIcons
@@ -15,7 +16,7 @@ class RerunAnalysisAction(
     private val rebuild: () -> Unit,
 ) : AnAction(
     "Rerun Analysis", "Rerun analysis on changed files",
-    AllIcons.Actions.Rerun
+    SdkIcons.rerunAnalysis
 ) {
 
     private val dependenciesHandler = project.service<DependenciesHandlerService>()
