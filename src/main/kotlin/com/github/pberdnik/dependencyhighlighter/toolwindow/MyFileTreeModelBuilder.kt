@@ -27,7 +27,6 @@ import javax.swing.tree.TreePath
 
 class MyFileTreeModelBuilder(
     private val myProject: Project,
-    marker: Marker?,
     settings: DependencyPanelSettings,
     private val myBaseDir: VirtualFile,
 ) {
@@ -36,8 +35,6 @@ class MyFileTreeModelBuilder(
     private val myFlattenPackages: Boolean
     private val myCompactEmptyMiddlePackages: Boolean
     private var myShowFiles: Boolean
-    private val myMarker: Marker?
-    private val myAddUnmarkedFiles: Boolean
     private val myRoot: PackageDependenciesNode
     private val myModuleDirNodes: MutableMap<DependencyType, MutableMap<VirtualFile, DirectoryNode>> = EnumMap(DependencyType::class.java)
     private val myModuleNodes: MutableMap<DependencyType, MutableMap<Module, ModuleNode>> = EnumMap(DependencyType::class.java)
@@ -48,7 +45,6 @@ class MyFileTreeModelBuilder(
     private val mCycleDependenciesNode: GeneralGroupNode
     private var myScannedFileCount = 0
     private var myTotalFileCount = 0
-    private var myMarkedFileCount = 0
     private var myTree: JTree? = null
     private var myContentRoots: Array<VirtualFile> = ProjectRootManager.getInstance(myProject).contentRoots
 
@@ -59,8 +55,6 @@ class MyFileTreeModelBuilder(
         myCompactEmptyMiddlePackages = directoryHelper.supportsHideEmptyMiddlePackages() && settings.UI_COMPACT_EMPTY_MIDDLE_PACKAGES
         myShowFiles = settings.UI_SHOW_FILES
         myShowModuleGroups = settings.UI_SHOW_MODULE_GROUPS && multiModuleProject
-        myMarker = marker
-        myAddUnmarkedFiles = !settings.UI_FILTER_LEGALS
         myRoot = RootNode(myProject)
         myFileIndex = ProjectRootManager.getInstance(myProject).fileIndex
         myModuleNodes[DependencyType.FORWARD] = HashMap()
@@ -102,7 +96,7 @@ class MyFileTreeModelBuilder(
             buildingRunnable.run()
         }
         TreeUtil.sortRecursively(mForwardDependenciesNode, DependencyNodeComparator())
-        return TreeModel(myRoot, myTotalFileCount, myMarkedFileCount)
+        return TreeModel(myRoot, myTotalFileCount, 0)
     }
 
     private fun buildFileNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode? {
@@ -111,19 +105,14 @@ class MyFileTreeModelBuilder(
         if (indicator != null) {
             update(indicator,  myScannedFileCount++.toDouble() / myTotalFileCount)
         }
-        val isMarked = myMarker != null && myMarker.isMarked(file)
-        if (isMarked) myMarkedFileCount++
-        if (isMarked || myAddUnmarkedFiles) {
-            val dirNode = getFileParentNode(file, dependencyType)
-            if (myShowFiles) {
-                val fileNode = FileNode(file, myProject, isMarked)
-                dirNode.add(fileNode)
-            } else {
-                dirNode.addFile(file, isMarked)
-            }
-            return dirNode
+        val dirNode = getFileParentNode(file, dependencyType)
+        if (myShowFiles) {
+            val fileNode = FileNode(file, myProject, false)
+            dirNode.add(fileNode)
+        } else {
+            dirNode.addFile(file, false)
         }
-        return null
+        return dirNode
     }
 
     private fun getFileParentNode(file: VirtualFile?, dependencyType: DependencyType): PackageDependenciesNode {
@@ -236,8 +225,8 @@ class MyFileTreeModelBuilder(
         private val LOG = Logger.getInstance(MyFileTreeModelBuilder::class.java)
         private val FILE_COUNT = Key.create<Int>("FILE_COUNT")
         @Synchronized
-        fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, marker: Marker?, settings: DependencyPanelSettings, baseDir: VirtualFile): TreeModel {
-            return MyFileTreeModelBuilder(project, marker, settings, baseDir).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
+        fun createTreeModel(project: Project, showProgress: Boolean, forwardFiles: Set<VirtualFile>, backwardFiles: Set<VirtualFile>, cycleFiles: Set<VirtualFile>?, settings: DependencyPanelSettings, baseDir: VirtualFile): TreeModel {
+            return MyFileTreeModelBuilder(project, settings, baseDir).build(forwardFiles, backwardFiles, cycleFiles, showProgress)
         }
 
         fun clearCaches(project: Project) {

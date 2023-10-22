@@ -11,7 +11,6 @@ import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.IndexNotReadyException
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiFile
 import com.intellij.ui.content.ContentFactory
 import javax.swing.SwingUtilities
 
@@ -19,8 +18,9 @@ class FileAnalyzeDependenciesHandler(
         private val project: Project,
         private val scopes: List<AnalysisScope>,
         private val myTransitiveBorder: Int,
-        private val excluded: MutableSet<PsiFile> = HashSet()
 ) {
+    private val dependenciesHandler = project.service<DependenciesHandlerService>()
+
     fun analyze() {
         val builders = mutableListOf<MyDependenciesBuilder>()
         runBackgroundableTask(progressTitle, project, true) { indicator ->
@@ -44,6 +44,7 @@ class FileAnalyzeDependenciesHandler(
             for (builder in builders) {
                 builder.analyze()
             }
+            dependenciesHandler.updateDependencies(builders)
         } catch (e: IndexNotReadyException) {
             DumbService.getInstance(project).showDumbModeNotification(
                     CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))
@@ -54,7 +55,7 @@ class FileAnalyzeDependenciesHandler(
     private fun refreshPanel(builders: MutableList<MyDependenciesBuilder>) {
         SwingUtilities.invokeLater {
             val displayName = CodeInsightBundle.message("package.dependencies.toolwindow.title", builders[0].scope.displayName)
-            val panel = FileDependenciesPanel(project, builders, excluded)
+            val panel = FileDependenciesPanel(project)
             val content = ContentFactory.getInstance().createContent(panel, displayName, false)
             content.setDisposer(panel)
             panel.setContent(content)

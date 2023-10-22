@@ -2,7 +2,6 @@ package com.github.pberdnik.dependencyhighlighter.fileui
 
 import com.github.pberdnik.dependencyhighlighter.Colors
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
@@ -45,7 +44,6 @@ class ProjectViewUiStateService(project: Project) {
                 parent = parent.parent
             }
         }
-        thisLogger().warn("DEPS_MAP: $forwardDepsNumMap \n $backwardDepsNumMap")
     }
 
 }

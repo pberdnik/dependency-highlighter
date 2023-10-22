@@ -27,9 +27,4 @@
             <override-text place="MainMenu" text="Extended Analyze Dependencies"/>
         </action>
     </actions>
-
-    <applicationListeners>
-        <listener class="com.github.pberdnik.dependencyhighlighter.SyncFilesChangeListener"
-                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
-    </applicationListeners>
 </idea-plugin>

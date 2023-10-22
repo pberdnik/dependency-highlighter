@@ -1,5 +1,6 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
+import com.github.pberdnik.dependencyhighlighter.FilesChangeListener
 import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.actions.MyAnalyzeDependenciesAction
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
@@ -13,7 +14,6 @@ import com.intellij.lang.LangBundle
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
@@ -25,6 +25,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.packageDependencies.DependencyRule
 import com.intellij.packageDependencies.ui.*
 import com.intellij.packageDependencies.ui.DependenciesPanel.DependencyPanelSettings
@@ -45,17 +46,13 @@ import javax.swing.tree.TreePath
 
 class FileDependenciesPanel(
         private val project: Project,
-        myBuilders: MutableList<MyDependenciesBuilder>,
-        myExcluded: MutableSet<PsiFile>
 ) : JPanel(BorderLayout()), Disposable, DataProvider {
-    private val myDependencies: MutableMap<PsiFile, Set<PsiFile>>
-    private val myBackwardDependencies: MutableMap<PsiFile, MutableSet<PsiFile>>
+
+    private val dependenciesHandler = project.service<DependenciesHandlerService>()
     private var myIllegalDependencies: MutableMap<VirtualFile, MutableMap<DependencyRule, MutableSet<PsiFile>>?>
     private val myLeftTree = MyTree()
     private val myRightTree = MyTree()
     private val myRightTreeExpansionMonitor: TreeExpansionMonitor<*>
-    private val myRightTreeMarker: Marker
-    private var myIllegalsInRightTree: MutableSet<VirtualFile> = HashSet()
     private var myContent: Content? = null
     private val mySettings = DependencyPanelSettings()
     private val myScopeOfInterest: AnalysisScope?
@@ -67,20 +64,13 @@ class FileDependenciesPanel(
     init {
         myScopeOfInterest = null
         myTransitiveBorder = 0
-        myDependencies = HashMap()
-        myBackwardDependencies = HashMap()
         myIllegalDependencies = HashMap()
-        for (builder in myBuilders) {
-            myDependencies.putAll(builder.dependencies)
-        }
-        buildBackwardFromForwardDependencies()
-        exclude(myExcluded)
         add(ScrollPaneFactory.createScrollPane(myRightTree), BorderLayout.CENTER)
         add(createToolbar(), BorderLayout.NORTH)
         myRightTreeExpansionMonitor = PackageTreeExpansionMonitor.install(myRightTree, this.project)
-        myRightTreeMarker = Marker { file -> myIllegalsInRightTree.contains(file) }
         updateRightTreeModel()
         val connection = this.project.messageBus.connect(this)
+        connection.subscribe(VirtualFileManager.VFS_CHANGES, FilesChangeListener(project))
         connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
             override fun fileOpened(manager: FileEditorManager, file: VirtualFile) {
                 mSelectedPsiFile = PsiManager.getInstance(project).findFile(file)
@@ -109,26 +99,6 @@ class FileDependenciesPanel(
         })
         initTree(myRightTree)
         setEmptyText(mySettings.UI_FILTER_LEGALS)
-    }
-
-    private fun buildBackwardFromForwardDependencies() {
-        myDependencies.forEach { (psiFile, depsSet) ->
-            depsSet.forEach { psiDep ->
-                if (myBackwardDependencies.contains(psiDep)) {
-                    myBackwardDependencies[psiDep]?.add(psiFile)
-                } else {
-                    val set = hashSetOf(psiFile)
-                    myBackwardDependencies[psiDep] = set
-                }
-            }
-        }
-    }
-
-    private fun exclude(excluded: Set<PsiFile>) {
-        for (psiFile in excluded) {
-            myDependencies.remove(psiFile)
-            myIllegalDependencies.remove(psiFile.virtualFile)
-        }
     }
 
     private fun createToolbar(): JComponent {
@@ -170,24 +140,14 @@ class FileDependenciesPanel(
             scope.add(it)
             vScope.add(it.virtualFile)
         } ?: return
-        myIllegalsInRightTree = HashSet()
         for (psiFile in scope) {
-            val illegalDeps = myIllegalDependencies[psiFile.virtualFile]
-            if (illegalDeps != null) {
-                for (rule in illegalDeps.keys) {
-                    val files = illegalDeps[rule]!!
-                    for (file in files) {
-                        myIllegalsInRightTree.add(file.virtualFile)
-                    }
-                }
-            }
-            val depFiles = myDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            val depFiles =  dependenciesHandler.myDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
             for (file in depFiles) {
                 if (file.isValid) {
                     forwardDeps.add(file)
                 }
             }
-            val backDepFiles = myBackwardDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            val backDepFiles = dependenciesHandler.myBackwardDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
             for (file in backDepFiles) {
                 if (file.isValid) {
                     backwardDeps.add(file)
@@ -208,7 +168,7 @@ class FileDependenciesPanel(
             UIUtils.updateUI(project)
             return
         }
-        myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, myRightTreeMarker, baseDir))
+        myRightTree.setModel(buildTreeModel(forwardDeps, backwardDeps, cycleDeps, baseDir))
         myRightTree.addTreeSelectionListener {
             highlighter.removeHighlight()
             val lastSelectedPathComponent = myRightTree.lastSelectedPathComponent
@@ -226,10 +186,11 @@ class FileDependenciesPanel(
         }
         myRightTreeExpansionMonitor.restore()
         expandFirstLevel(myRightTree)
+        UIUtils.updateUI(project)
     }
 
-    private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, marker: Marker, baseDir: VirtualFile): TreeModel {
-        return MyFileTreeModelBuilder.createTreeModel(project, false, forwardDeps, backwardDeps, cycleDeps, marker, mySettings, baseDir)
+    private fun buildTreeModel(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>, baseDir: VirtualFile): TreeModel {
+        return MyFileTreeModelBuilder.createTreeModel(project, false, forwardDeps, backwardDeps, cycleDeps, mySettings, baseDir)
     }
 
     fun setContent(content: Content?) {

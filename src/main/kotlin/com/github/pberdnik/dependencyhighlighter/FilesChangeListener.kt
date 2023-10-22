@@ -1,11 +1,18 @@
 package com.github.pberdnik.dependencyhighlighter
 
+import com.github.pberdnik.dependencyhighlighter.toolwindow.DependenciesHandlerService
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.*
 
-class SyncFilesChangeListener : BulkFileListener {
+class FilesChangeListener(
+    project: Project,
+) : BulkFileListener {
     private var eventNumAfter = 1
+
+    private val dependenciesHandlerService = project.service<DependenciesHandlerService>()
 
     override fun after(events: MutableList<out VFileEvent>) {
         thisLogger().warn("EVENT $eventNumAfter: $events")

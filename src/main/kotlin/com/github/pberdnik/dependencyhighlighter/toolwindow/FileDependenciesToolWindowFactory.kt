@@ -9,7 +9,7 @@ import com.intellij.ui.content.ContentFactory
 class FileDependenciesToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         project.service<FileDependenciesToolWindow>().setContentManager(toolWindow.contentManager)
-        val panel = FileDependenciesPanel(project, mutableListOf(), mutableSetOf())
+        val panel = FileDependenciesPanel(project)
         val content = ContentFactory.getInstance().createContent(panel, "Dependencies", false)
         toolWindow.contentManager.addContent(content)
     }
