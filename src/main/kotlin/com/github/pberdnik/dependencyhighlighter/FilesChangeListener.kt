@@ -23,11 +23,11 @@ class FilesChangeListener(
                 }
 
                 is VFilePropertyChangeEvent -> {
-                    thisLogger().warn("    PATH CHANGE: ${action.oldPath} ${action.newPath} isDir=${action.file?.isDirectory}")
+                    thisLogger().warn("    PATH CHANGE: ${action.oldPath} ${action.newPath} isDir=${action.file.isDirectory}")
                 }
 
                 is VFileDeleteEvent -> {
-                    thisLogger().warn("    DELETE: ${action.path} isDir=${action.file?.isDirectory}")
+                    thisLogger().warn("    DELETE: ${action.path} isDir=${action.file.isDirectory}")
                 }
 
                 is VFileCreateEvent -> {

@@ -10,42 +10,12 @@ import com.intellij.packageDependencies.DependencyVisitorFactory.VisitorOptions
 import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.PsiFileEx
 
-/**
- * @author anna
- */
-abstract class MyDependenciesBuilder protected constructor(val project: Project, val scope: AnalysisScope) {
+abstract class DependenciesBuilder protected constructor(val project: Project, val scope: AnalysisScope) {
     val dependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
-    protected var myTotalFileCount: Int = scope.fileCount
-    protected var myFileCount = 0
+    protected var totalFileCount: Int = scope.fileCount
+    protected var fileCount = 0
 
     abstract fun analyze()
-
-    fun findPaths(from: PsiFile, to: PsiFile): List<List<PsiFile>> {
-        return findPaths(from, to, HashSet())
-    }
-
-    private fun findPaths(from: PsiFile, to: PsiFile, processed: MutableSet<in PsiFile>): List<MutableList<PsiFile>> {
-        val result: MutableList<MutableList<PsiFile>> = ArrayList()
-        val reachable = dependencies[from]
-        if (reachable != null) {
-            if (reachable.contains(to)) {
-                result.add(ArrayList())
-                return result
-            }
-            if (processed.add(from)) {
-                for (file in reachable) {
-                    if (!scope.contains(file)) { //exclude paths through scope
-                        val paths = findPaths(file, to, processed)
-                        for (path in paths) {
-                            path.add(0, file)
-                        }
-                        result.addAll(paths)
-                    }
-                }
-            }
-        }
-        return result
-    }
 
     fun getRelativeToProjectPath(virtualFile: VirtualFile): String {
         return displayUrlRelativeToProject(virtualFile, virtualFile.presentableUrl, project, isIncludeFilePath = true, moduleOnTheLeft = false)

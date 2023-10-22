@@ -1,12 +1,11 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
-import com.github.pberdnik.dependencyhighlighter.actions.MyForwardDependenciesBuilder
+import com.github.pberdnik.dependencyhighlighter.actions.ForwardDependenciesBuilder
 import com.intellij.analysis.AnalysisScope
 import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.components.service
 import com.intellij.openapi.progress.ProcessCanceledException
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.IndexNotReadyException
@@ -15,31 +14,27 @@ import com.intellij.ui.content.ContentFactory
 import javax.swing.SwingUtilities
 
 class FileAnalyzeDependenciesHandler(
-        private val project: Project,
-        private val scopes: List<AnalysisScope>,
-        private val myTransitiveBorder: Int,
+    private val project: Project,
+    private val scopes: List<AnalysisScope>,
 ) {
     private val dependenciesHandler = project.service<DependenciesHandlerService>()
 
     fun analyze() {
-        val builders = mutableListOf<MyDependenciesBuilder>()
         runBackgroundableTask(progressTitle, project, true) { indicator ->
             indicator.isIndeterminate = false
-            perform(builders, indicator)
-            refreshPanel(builders)
+            perform()
+            refreshPanel()
         }
     }
 
     private val progressTitle: String
         get() = CodeInsightBundle.message("package.dependencies.progress.title")
 
-    private fun perform(
-            builders: MutableList<MyDependenciesBuilder>,
-            indicator: ProgressIndicator,
-    ) {
+    private fun perform() {
         try {
+            val builders = mutableListOf<DependenciesBuilder>()
             for (scope in scopes) {
-                builders.add(MyForwardDependenciesBuilder(project, scope, myTransitiveBorder))
+                builders.add(ForwardDependenciesBuilder(project, scope))
             }
             for (builder in builders) {
                 builder.analyze()
@@ -47,18 +42,18 @@ class FileAnalyzeDependenciesHandler(
             dependenciesHandler.updateDependencies(builders)
         } catch (e: IndexNotReadyException) {
             DumbService.getInstance(project).showDumbModeNotification(
-                    CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing"))
+                CodeInsightBundle.message("analyze.dependencies.not.available.notification.indexing")
+            )
             throw ProcessCanceledException()
         }
     }
 
-    private fun refreshPanel(builders: MutableList<MyDependenciesBuilder>) {
+    private fun refreshPanel() {
         SwingUtilities.invokeLater {
-            val displayName = CodeInsightBundle.message("package.dependencies.toolwindow.title", builders[0].scope.displayName)
+            val displayName = "Dependencies"
             val panel = FileDependenciesPanel(project)
             val content = ContentFactory.getInstance().createContent(panel, displayName, false)
             content.setDisposer(panel)
-            panel.setContent(content)
             project.service<FileDependenciesToolWindow>().addContent(content)
         }
         ProjectView.getInstance(project).refresh()

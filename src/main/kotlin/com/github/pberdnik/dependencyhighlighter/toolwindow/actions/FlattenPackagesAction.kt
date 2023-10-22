@@ -9,17 +9,17 @@ import com.intellij.packageDependencies.ui.DependenciesPanel
 import com.intellij.util.PlatformIcons
 
 class FlattenPackagesAction(
-        private val mySettings: DependenciesPanel.DependencyPanelSettings,
-        private val rebuild: () -> Unit,
+    private val settings: DependenciesPanel.DependencyPanelSettings,
+    private val rebuild: () -> Unit,
 ) : ToggleAction(CodeInsightBundle.messagePointer("action.flatten.packages"), CodeInsightBundle.messagePointer("action.flatten.packages"),
         PlatformIcons.FLATTEN_PACKAGES_ICON) {
     override fun isSelected(event: AnActionEvent): Boolean {
-        return mySettings.UI_FLATTEN_PACKAGES
+        return settings.UI_FLATTEN_PACKAGES
     }
 
     override fun setSelected(event: AnActionEvent, flag: Boolean) {
         DependencyUISettings.getInstance().UI_FLATTEN_PACKAGES = flag
-        mySettings.UI_FLATTEN_PACKAGES = flag
+        settings.UI_FLATTEN_PACKAGES = flag
         rebuild()
     }
 

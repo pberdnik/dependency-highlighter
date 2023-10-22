@@ -32,8 +32,4 @@ class FileDependenciesToolWindow(private val project: Project) {
             }
         }
     }
-
-    fun closeContent(content: Content?) {
-        contentManager?.removeContent(content!!, true)
-    }
 }

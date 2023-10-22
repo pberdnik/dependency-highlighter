@@ -2,25 +2,21 @@ package com.github.pberdnik.dependencyhighlighter.fileui
 
 import com.github.pberdnik.dependencyhighlighter.Colors
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 
 @Service(Service.Level.PROJECT)
-class ProjectViewUiStateService(project: Project) {
+class ProjectViewUiStateService {
     private var forwardDeps: Set<VirtualFile> = HashSet()
     private var backwardDeps: Set<VirtualFile> = HashSet()
-    private var cycleDeps: Set<VirtualFile> = HashSet()
 
     val fileColorMap = mutableMapOf<String, JBColor>()
     val forwardDepsNumMap = mutableMapOf<String, Int>()
     val backwardDepsNumMap = mutableMapOf<String, Int>()
 
-    fun getRandomNumber() = (1..100).random()
-    fun setDeps(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>, cycleDeps: Set<VirtualFile>) {
+    fun setDeps(forwardDeps: Set<VirtualFile>, backwardDeps: Set<VirtualFile>) {
         this.forwardDeps = forwardDeps
         this.backwardDeps = backwardDeps
-        this.cycleDeps = cycleDeps
         updateUiState()
     }
 

@@ -14,9 +14,9 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 
-class MyAnalyzeDependenciesAction : AnAction("Run Analysis", "Run analysis", SdkIcons.analyze) {
+class AnalyzeDependenciesAction : AnAction("Run Analysis", "Run analysis", SdkIcons.analyze) {
     private fun analyze(project: Project, scope: AnalysisScope) {
-        FileAnalyzeDependenciesHandler(project, listOf(scope), 0).analyze()
+        FileAnalyzeDependenciesHandler(project, listOf(scope)).analyze()
     }
 
     override fun actionPerformed(e: AnActionEvent) {

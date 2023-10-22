@@ -1,31 +1,28 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 
 @Service(Service.Level.PROJECT)
-class DependenciesHandlerService(
-    private val project: Project,
-) {
-    val myDependencies: MutableMap<PsiFile, Set<PsiFile>> = mutableMapOf()
-    val myBackwardDependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = mutableMapOf()
+class DependenciesHandlerService {
+    val forwardDependencies: MutableMap<PsiFile, Set<PsiFile>> = mutableMapOf()
+    val backwardDependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = mutableMapOf()
 
-    fun updateDependencies(dependencyBuilders: MutableList<MyDependenciesBuilder>,) {
+    fun updateDependencies(dependencyBuilders: MutableList<DependenciesBuilder>) {
         for (builder in dependencyBuilders) {
-            myDependencies.putAll(builder.dependencies)
+            forwardDependencies.putAll(builder.dependencies)
         }
         buildBackwardFromForwardDependencies()
     }
 
     private fun buildBackwardFromForwardDependencies() {
-        myDependencies.forEach { (psiFile, depsSet) ->
+        forwardDependencies.forEach { (psiFile, depsSet) ->
             depsSet.forEach { psiDep ->
-                if (myBackwardDependencies.contains(psiDep)) {
-                    myBackwardDependencies[psiDep]?.add(psiFile)
+                if (backwardDependencies.contains(psiDep)) {
+                    backwardDependencies[psiDep]?.add(psiFile)
                 } else {
                     val set = hashSetOf(psiFile)
-                    myBackwardDependencies[psiDep] = set
+                    backwardDependencies[psiDep] = set
                 }
             }
         }

@@ -1,6 +1,6 @@
 package com.github.pberdnik.dependencyhighlighter.actions
 
-import com.github.pberdnik.dependencyhighlighter.toolwindow.MyDependenciesBuilder
+import com.github.pberdnik.dependencyhighlighter.toolwindow.DependenciesBuilder
 import com.intellij.analysis.AnalysisScope
 import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.openapi.project.Project
@@ -15,7 +15,7 @@ import com.intellij.psi.search.LocalSearchScope
 class InFileHighlighter(
         project: Project,
         psiFile: PsiFile,
-) : MyDependenciesBuilder(project, AnalysisScope(LocalSearchScope(psiFile), project)) {
+) : DependenciesBuilder(project, AnalysisScope(LocalSearchScope(psiFile), project)) {
     val deps: MutableSet<PsiElementAndFile> = mutableSetOf()
     override fun analyze() {
         val psiManager = PsiManager.getInstance(project)

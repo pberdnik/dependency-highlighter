@@ -13,7 +13,6 @@ class ProjectPanelColorProvider : EditorTabColorProvider {
     }
 
     override fun getProjectViewColor(project: Project, file: VirtualFile): Color? {
-//        thisLogger().warn("file: $file \n|    path: ${file.path} \n|    type: ${file.fileType}")
         return getColor(project, file)
     }
 

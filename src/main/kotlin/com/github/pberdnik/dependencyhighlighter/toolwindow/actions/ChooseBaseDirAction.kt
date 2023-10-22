@@ -11,13 +11,13 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.util.PlatformIcons
 
 class ChooseBaseDirAction(
-    private val myProject: Project,
+    private val project: Project,
     private val rebuild: () -> Unit,
 ) : AnAction(
     "Choose Base Directory", "Choose base directory",
     PlatformIcons.PROJECT_ICON) {
     override fun actionPerformed(e: AnActionEvent) {
-        val settings = myProject.service<PluginSetting>()
+        val settings = project.service<PluginSetting>()
         settings.baseDir = FileChooser.chooseFile(
             FileChooserDescriptor(
                  false, // chooseFiles
@@ -27,8 +27,8 @@ class ChooseBaseDirAction(
                  false, // chooseJarContents
                  false, // chooseMultiple
             ),
-            myProject,
-            myProject.guessProjectDir())?.path
+            project,
+            project.guessProjectDir())?.path
         rebuild()
     }
 }

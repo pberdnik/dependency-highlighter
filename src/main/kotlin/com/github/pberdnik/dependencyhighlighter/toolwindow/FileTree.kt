@@ -4,10 +4,9 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataProvider
 import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.packageDependencies.ui.PackageDependenciesNode
-import com.intellij.psi.PsiFile
 import com.intellij.ui.treeStructure.Tree
 
-class MyTree : Tree(), DataProvider {
+class FileTree : Tree(), DataProvider {
     override fun getData(dataId: String): Any? {
         val node: PackageDependenciesNode? = selectedNode
         if (CommonDataKeys.NAVIGATABLE.`is`(dataId)) {
@@ -41,15 +40,3 @@ class MyTree : Tree(), DataProvider {
             return if (paths == null || paths.size != 1) null else paths[0].lastPathComponent as PackageDependenciesNode
         }
 }
-
-fun getSelectedScope(tree: Tree, flattenPackages: Boolean): MutableSet<PsiFile> {
-    val paths = tree.getSelectionPaths() ?: return EMPTY_FILE_SET
-    val result: MutableSet<PsiFile> = HashSet()
-    for (path in paths) {
-        val node = path.lastPathComponent as PackageDependenciesNode
-        node.fillFiles(result, !flattenPackages)
-    }
-    return result
-}
-
-private val EMPTY_FILE_SET: MutableSet<PsiFile> = HashSet(0)
