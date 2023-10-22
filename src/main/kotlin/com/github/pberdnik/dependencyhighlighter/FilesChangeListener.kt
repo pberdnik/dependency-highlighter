@@ -17,6 +17,7 @@ class FilesChangeListener(
     override fun after(events: MutableList<out VFileEvent>) {
         thisLogger().warn("EVENT $eventNumAfter: $events")
         events.forEach { action ->
+            dependenciesHandlerService.fileChanged(action.file)
             when (action) {
                 is VFileContentChangeEvent -> {
                     thisLogger().warn("    CONTENT CHANGE: ${action.path} isDir=${action.file.isDirectory}")

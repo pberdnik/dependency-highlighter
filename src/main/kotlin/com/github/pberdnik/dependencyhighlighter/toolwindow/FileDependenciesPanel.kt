@@ -6,6 +6,7 @@ import com.github.pberdnik.dependencyhighlighter.actions.AnalyzeDependenciesActi
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.ChooseBaseDirAction
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
+import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.RerunAnalysisAction
 import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.codeInsight.CodeInsightBundle
@@ -93,6 +94,7 @@ class FileDependenciesPanel(
     private fun createToolbar(): JComponent {
         val group = DefaultActionGroup()
         group.add(AnalyzeDependenciesAction())
+        group.add(RerunAnalysisAction(project, ::updateRightTreeModel))
         group.add(FlattenPackagesAction(settings, ::updateRightTreeModel))
         group.add(ChooseBaseDirAction(project, ::updateRightTreeModel))
         settings.UI_SHOW_FILES = true
@@ -122,13 +124,13 @@ class FileDependenciesPanel(
             scope.add(it)
         } ?: return
         for (psiFile in scope) {
-            val depFiles =  dependenciesHandler.forwardDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            val depFiles = dependenciesHandler.getForwardDependencies(psiFile.virtualFile)
             for (file in depFiles) {
                 if (file.isValid) {
                     forwardDeps.add(file)
                 }
             }
-            val backDepFiles = dependenciesHandler.backwardDependencies[psiFile]?.map { it.virtualFile } ?: setOf()
+            val backDepFiles = dependenciesHandler.getBackwardDependencies(psiFile.virtualFile)
             for (file in backDepFiles) {
                 if (file.isValid) {
                     backwardDeps.add(file)

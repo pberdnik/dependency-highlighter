@@ -11,7 +11,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.impl.PsiFileEx
 
 abstract class DependenciesBuilder protected constructor(val project: Project, val scope: AnalysisScope) {
-    val dependencies: MutableMap<PsiFile, MutableSet<PsiFile>> = HashMap()
+    val dependencies: MutableMap<VirtualFile, MutableSet<VirtualFile>> = HashMap()
     protected var totalFileCount: Int = scope.fileCount
     protected var fileCount = 0
 

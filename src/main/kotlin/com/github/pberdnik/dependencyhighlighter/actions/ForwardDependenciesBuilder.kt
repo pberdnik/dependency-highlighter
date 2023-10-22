@@ -59,7 +59,7 @@ class ForwardDependenciesBuilder(project: Project, scope: AnalysisScope) : Depen
             }
         }
         if (processed.add(file)) {
-            val found: MutableSet<PsiFile> = HashSet()
+            val found: MutableSet<VirtualFile> = HashSet()
             analyzeFileDependencies(file) { _: PsiElement?, dependency: PsiElement ->
                 val dependencyFile = dependency.containingFile
                 if (dependencyFile != null) {
@@ -67,11 +67,17 @@ class ForwardDependenciesBuilder(project: Project, scope: AnalysisScope) : Depen
                     val depFile = dependencyFile.virtualFile
                     if (depFile != null && (fileIndex.isInContent(depFile) || fileIndex.isInLibrary(depFile))) {
                         val navigationElement = dependencyFile.navigationElement
-                        found.add(if (navigationElement is PsiFile) navigationElement else dependencyFile)
+                        found.add(
+                            if (navigationElement is PsiFile) {
+                                navigationElement.virtualFile
+                            } else {
+                                dependencyFile.virtualFile
+                            }
+                        )
                     }
                 }
             }
-            val deps = dependencies.computeIfAbsent(file) { _: PsiFile? -> HashSet() }
+            val deps = dependencies.computeIfAbsent(file.virtualFile) { _: VirtualFile? -> HashSet() }
             deps.addAll(found)
             psiManager.dropResolveCaches()
             InjectedLanguageManager.getInstance(file.project).dropFileCaches(file)
