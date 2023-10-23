@@ -9,6 +9,7 @@ class PluginSetting : PersistentStateComponent<PluginSetting> {
     var baseDir: String? = null
     var highlightForward: Boolean = true
     var highlightBackward: Boolean = true
+    var autoReanalyse: Boolean = true
     override fun getState(): PluginSetting {
         return this
     }

@@ -3,7 +3,6 @@ package com.github.pberdnik.dependencyhighlighter.toolwindow
 import com.github.pberdnik.dependencyhighlighter.actions.ForwardDependenciesBuilder
 import com.intellij.analysis.AnalysisScope
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
@@ -40,7 +39,6 @@ class DependenciesHandlerService(
         if (file == null) return
         if (file.isDirectory) return
         changedFiles.add(file)
-        thisLogger().warn("ADD CHANGED FILE: $file")
     }
 
     fun reanalyseChanged() {

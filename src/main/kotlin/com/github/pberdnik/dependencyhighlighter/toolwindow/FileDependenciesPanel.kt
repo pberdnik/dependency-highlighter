@@ -1,8 +1,8 @@
 package com.github.pberdnik.dependencyhighlighter.toolwindow
 
 import com.github.pberdnik.dependencyhighlighter.FilesChangeListener
-import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.actions.AnalyzeDependenciesAction
+import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
 import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.*
 import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
@@ -94,10 +94,11 @@ class FileDependenciesPanel(
         val group = DefaultActionGroup()
         group.add(AnalyzeDependenciesAction())
         group.add(RerunAnalysisAction(project, ::updateRightTreeModel))
+        group.add(AutoReanalyseAction(project, ::updateRightTreeModel))
         group.add(FlattenPackagesAction(settings, ::updateRightTreeModel))
-        group.add(ChooseBaseDirAction(project, ::updateRightTreeModel))
         group.add(HighlightForwardAction(project, ::updateRightTreeModel))
         group.add(HighlightBackwardAction(project, ::updateRightTreeModel))
+        group.add(ChooseBaseDirAction(project, ::updateRightTreeModel))
         settings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
             settings.UI_SHOW_MODULES = true
