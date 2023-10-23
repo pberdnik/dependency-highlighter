@@ -10,4 +10,6 @@ public class SdkIcons {
   public static final Icon analyze = IconLoader.getIcon("/icons/analyze.svg", SdkIcons.class);
   public static final Icon analysis = IconLoader.getIcon("/icons/analysis.svg", SdkIcons.class);
   public static final Icon rerunAnalysis = IconLoader.getIcon("/icons/rerun_analysis.svg", SdkIcons.class);
+  public static final Icon highlightForward = IconLoader.getIcon("/icons/highlight_forward.svg", SdkIcons.class);
+  public static final Icon highlightBackward = IconLoader.getIcon("/icons/highlight_backward.svg", SdkIcons.class);
 }

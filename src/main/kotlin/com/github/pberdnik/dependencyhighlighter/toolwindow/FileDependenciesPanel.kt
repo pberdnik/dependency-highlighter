@@ -4,9 +4,7 @@ import com.github.pberdnik.dependencyhighlighter.FilesChangeListener
 import com.github.pberdnik.dependencyhighlighter.actions.InFileHighlighter
 import com.github.pberdnik.dependencyhighlighter.actions.AnalyzeDependenciesAction
 import com.github.pberdnik.dependencyhighlighter.fileui.ProjectViewUiStateService
-import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.ChooseBaseDirAction
-import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.FlattenPackagesAction
-import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.RerunAnalysisAction
+import com.github.pberdnik.dependencyhighlighter.toolwindow.actions.*
 import com.github.pberdnik.dependencyhighlighter.utils.EditorPsiElementHighlighter
 import com.github.pberdnik.dependencyhighlighter.utils.UIUtils
 import com.intellij.codeInsight.CodeInsightBundle
@@ -53,6 +51,7 @@ class FileDependenciesPanel(
     private var selectedPsiFile: PsiFile? = null
     private var inFileHighlighter: InFileHighlighter? = null
     private val highlighter = EditorPsiElementHighlighter(project)
+    private val pluginSettings = project.service<PluginSetting>()
 
     init {
         add(ScrollPaneFactory.createScrollPane(rightTree), BorderLayout.CENTER)
@@ -97,6 +96,8 @@ class FileDependenciesPanel(
         group.add(RerunAnalysisAction(project, ::updateRightTreeModel))
         group.add(FlattenPackagesAction(settings, ::updateRightTreeModel))
         group.add(ChooseBaseDirAction(project, ::updateRightTreeModel))
+        group.add(HighlightForwardAction(project, ::updateRightTreeModel))
+        group.add(HighlightBackwardAction(project, ::updateRightTreeModel))
         settings.UI_SHOW_FILES = true
         if (ModuleManager.getInstance(project).modules.size > 1) {
             settings.UI_SHOW_MODULES = true
@@ -141,7 +142,7 @@ class FileDependenciesPanel(
         backwardDeps.remove(selectedPsiFile?.virtualFile)
         project.service<ProjectViewUiStateService>().setDeps(forwardDeps, backwardDeps)
         rightTreeExpansionMonitor.freeze()
-        val baseDirPath = project.service<PluginSetting>().baseDir
+        val baseDirPath = pluginSettings.baseDir
         val baseDir = if (baseDirPath != null) {
             LocalFileSystem.getInstance().findFileByPath(baseDirPath)
         } else {
