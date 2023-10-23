@@ -17,6 +17,6 @@
 
 - Initial plugin functionality
 
-[Unreleased]: https://github.com/pberdnik/dependency-highlighter/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/pberdnik/dependency-highlighter/compare/v1.0.7...HEAD
 [1.0.7]: https://github.com/pberdnik/dependency-highlighter/commits/v1.0.7
 [1.0.6]: https://github.com/pberdnik/dependency-highlighter/commits/v1.0.6
